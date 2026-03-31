@@ -1,6 +1,6 @@
 node_modules/
-public/data/*.bsp                  # .bsp は原則 push しない（容量大）
-!public/data/de440s-modern.bsp     # modern だけ例外で push する（本番用・24MB）
+docs/data/*.bsp                  # .bsp は原則 push しない（容量大）
+!docs/data/de440s-modern.bsp     # modern だけ例外で push する（本番用・24MB）
 _private/
 .DS_Store
 *.log
