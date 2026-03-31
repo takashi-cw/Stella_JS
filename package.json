@@ -1,0 +1,23 @@
+{
+  "name": "stella-js",
+  "version": "0.1.0",
+  "description": "Pure JavaScript astronomical/astrological engine — JPL DE direct reader for the browser",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "npx serve . --listen 8000",
+    "test": "node --test test/**/*.js",
+    "build": "echo 'TODO: bundle & minify to dist/stella-engine.min.js'"
+  },
+  "keywords": [
+    "astronomy",
+    "astrology",
+    "ephemeris",
+    "jpl",
+    "bsp",
+    "chebyshev",
+    "skyfield"
+  ],
+  "author": "Takashi",
+  "license": "MIT",
+  "type": "module"
+}

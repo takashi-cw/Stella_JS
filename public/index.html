@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>りんご力学</title>
+  <meta name="description" content="NASA JPL DE440s を直接読み込む高精度天文・占星術計算アプリ。惑星位置・逆行検出・ネイタルチャート・四柱推命など。サーバー不要・完全ブラウザ動作。">
+  <meta name="theme-color" content="#7c6af7">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css?v=20260331">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ヘッダー -->
+  <header>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="menu-toggle" aria-label="メニューを開く">☰</button>
+      <h1>🍎 りんご力学</h1>
+    </div>
+    <p class="subtitle">Pure astronomical/astrological engine — JPL DE Ephemeris direct reader —</p>
+    <div id="bsp-status" class="status-badge status-loading">BSP: 読み込み中...</div>
+  </header>
+
+  <div id="layout">
+
+    <!-- ── サイドバーナビゲーション ──────────────────────────────── -->
+    <aside id="sidebar">
+      <nav id="main-nav">
+
+        <div class="nav-group" data-tab="astro">
+          <button class="nav-group-hd">
+            <span>📊 天文計算</span><span class="nav-chevron">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <button class="nav-item" data-tab="astro" data-sub="astro-planet">1. 惑星位置計算</button>
+            <button class="nav-item" data-tab="astro" data-sub="astro-helio">2. ヘリオセントリック計算</button>
+            <button class="nav-item" data-tab="astro" data-sub="astro-retro">3. 逆行期間計算</button>
+            <button class="nav-item" data-tab="astro" data-sub="astro-aspects-ts">4. 惑星間アスペクト時系列</button>
+            <button class="nav-item" data-tab="astro" data-sub="astro-boundary">5. 任意境界角度通過検出</button>
+            <button class="nav-item" data-tab="astro" data-sub="astro-solar-cal">6. 太陽黄経暦</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-tab="observation">
+          <button class="nav-group-hd">
+            <span>🔭 天体観測</span><span class="nav-chevron">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <button class="nav-item" data-tab="observation" data-sub="obs-moon-phase">1. 月相イベント</button>
+            <button class="nav-item" data-tab="observation" data-sub="obs-moon-cont">2. 月相連続変化</button>
+            <button class="nav-item" data-tab="observation" data-sub="obs-sunrise">3. 太陽の出没</button>
+            <button class="nav-item" data-tab="observation" data-sub="obs-moonrise">4. 月の出没</button>
+            <button class="nav-item" data-tab="observation" data-sub="obs-landscape">5. 天体風景</button>
+            <button class="nav-item" data-tab="observation" data-sub="obs-sekki">6. 24節気カレンダー</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-tab="astrology">
+          <button class="nav-group-hd">
+            <span>🔮 占星術計算</span><span class="nav-chevron">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <button class="nav-item" data-tab="astrology" data-sub="astro-modern">3-1. 現代西洋占星術</button>
+            <button class="nav-item" data-tab="astrology" data-sub="astro-medieval">3-2. 中世西洋占星術</button>
+            <button class="nav-item" data-tab="astrology" data-sub="astro-helio-a">3-3. ヘリオ占星術</button>
+            <button class="nav-item" data-tab="astrology" data-sub="astro-oriental">3-4. 東洋占術</button>
+            <button class="nav-item" data-tab="astrology" data-sub="astro-void">3-5. 月のボイドタイム</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-tab="ephemeris">
+          <button class="nav-group-hd">
+            <span>📋 基準物理天体暦</span><span class="nav-chevron">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <button class="nav-item" data-tab="ephemeris" data-sub="eph-planet">A. 惑星基準物理天体暦</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-tab="cal-conv">
+          <button class="nav-group-hd">
+            <span>📅 暦変換計算</span><span class="nav-chevron">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <button class="nav-item" data-tab="cal-conv" data-sub="cal-conv-main">1. 日付・暦変換</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-tab="ai-sim">
+          <button class="nav-group-hd">
+            <span>🤝 AI相談シミュレーター</span><span class="nav-chevron">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <button class="nav-item" data-tab="ai-sim" data-sub="ai-sim-main">1. 鑑定練習（準備中）</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-tab="settings">
+          <button class="nav-group-hd">
+            <span>⚙️ 設定</span><span class="nav-chevron">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <button class="nav-item" data-tab="settings" data-sub="settings-ephemeris">1. 天体暦・座標系</button>
+            <button class="nav-item" data-tab="settings" data-sub="settings-changelog">2. 更新履歴</button>
+            <button class="nav-item" data-tab="settings" data-sub="settings-license">3. ライセンス情報</button>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <a class="nav-group-hd" href="help.html" style="text-decoration:none;display:flex;align-items:center;justify-content:space-between;">
+            <span>❓ ヘルプ</span>
+          </a>
+        </div>
+
+      </nav>
+    </aside><!-- /#sidebar -->
+
+    <!-- ── コンテンツエリア ───────────────────────────────────────── -->
+    <main id="content-area">
+
+  <!-- ウェルカムパネル（初期表示） -->
+  <section id="tab-welcome" class="tab-content active">
+    <div class="welcome-panel">
+      <p class="welcome-lead">JPL DE440s 天体暦を直接読み取る純粋な天文・占星術エンジン。<br>左メニューから機能を選ぶか、下のカードをクリックしてください。</p>
+
+      <div class="feature-grid">
+
+        <div class="feature-card" data-tab="astro" data-sub="astro-planet">
+          <div class="feature-card-title">📊 天文計算</div>
+          <div class="feature-card-desc">惑星位置 · 日心計算 · 逆行期間<br>アスペクト時系列 · 境界角度検出 · 太陽黄経暦</div>
+        </div>
+
+        <div class="feature-card" data-tab="observation" data-sub="obs-moon-phase">
+          <div class="feature-card-title">🔭 天体観測</div>
+          <div class="feature-card-desc">月相イベント · 太陽 / 月の出没<br>天体風景（高度 · 方位） · 24節気カレンダー</div>
+        </div>
+
+        <div class="feature-card" data-tab="astrology" data-sub="astro-modern">
+          <div class="feature-card-title">🔮 占星術計算</div>
+          <div class="feature-card-desc">現代 · 中世西洋 · ヘリオ占星術<br>東洋占術 · 月のボイドタイム</div>
+        </div>
+
+        <div class="feature-card" data-tab="ephemeris" data-sub="eph-planet">
+          <div class="feature-card-title">📋 基準物理天体暦</div>
+          <div class="feature-card-desc">Planet-Physics — 地心連続物理量<br>λ(t) · ω(t) · β(t) を JPL DE440s から出力</div>
+        </div>
+
+        <div class="feature-card is-coming" data-tab="ai-sim" data-sub="ai-sim-main">
+          <div class="feature-card-title">🤝 AI相談シミュレーター</div>
+          <div class="feature-card-desc">鑑定練習 — AI が相談者役を担い<br>ホロスコープ鑑定を対話形式で練習（準備中）</div>
+        </div>
+
+        <div class="feature-card" data-tab="settings" data-sub="settings-ephemeris">
+          <div class="feature-card-title">⚙️ 設定</div>
+          <div class="feature-card-desc">BSP 天体暦ファイル · 黄道座標系<br>更新履歴 · ライセンス情報</div>
+        </div>
+
+      </div>
+
+      <div class="welcome-about">
+        <h4 class="welcome-about-title">🍎 このツールについて</h4>
+        <p>
+          <strong>"占星術に物理根拠を"</strong> をきっかけに、天文計算を誰でも手軽に使えるツールを目指して開発しています。
+        </p>
+        <p>
+          機能追加の基準は <strong>「天文学的に意味があるか」</strong>。<br>
+          占星術にしか役立たない機能はお受けできませんが、バグ報告・ご要望はいつでもどうぞ。
+        </p>
+        <p>
+          📧 <a href="mailto:shigatakashi.cw@gmail.com">shigatakashi.cw@gmail.com</a>
+        </p>
+      </div>
+
+      <div class="welcome-footer">
+        <span>🌍 JPL DE440s (NASA)</span>
+        <span>📄 MIT License</span>
+        <span>v0.1.1</span>
+        <span style="margin-left:auto">🍎 ロゴをクリックするとこの画面に戻ります</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <!-- タブ 1: 天文計算モード -->
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <section id="tab-astro" class="tab-content">
+
+    <!-- 1. 惑星位置計算 -->
+    <div id="astro-planet" class="sub-content active">
+      <h3>惑星位置計算（地心座標）</h3>
+      <form class="calc-form" id="form-planet-pos">
+        <div class="form-row">
+          <label>日時（JST）</label>
+          <input type="datetime-local" id="planet-datetime" value="2000-01-01T12:00">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-planet-pos" class="result-area"></div>
+    </div>
+
+    <!-- 2. 太陽系計算（日心） -->
+    <div id="astro-helio" class="sub-content">
+      <h3>ヘリオセントリック計算</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+        太陽を原点とした真の日心座標（黄経・黄緯・距離・公転速度）を計算します。
+      </p>
+      <form class="calc-form" id="form-helio">
+        <div class="form-row">
+          <label>日時（JST）</label>
+          <input type="datetime-local" id="helio-sci-datetime" value="2000-01-01T12:00">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-helio" class="result-area"></div>
+    </div>
+
+    <!-- 3. 逆行期間計算 -->
+    <div id="astro-retro" class="sub-content">
+      <h3>逆行期間計算</h3>
+
+      <div class="sub-menu-2">
+        <button class="sub-btn-2 active" data-sub2="retro-sub-1">1. 地心固定逆行計算</button>
+        <button class="sub-btn-2" data-sub2="retro-sub-3">2. 物理量逆行計算（天文学用）</button>
+        <button class="sub-btn-2" data-sub2="retro-sub-4">3. 逆行連続物理量計算</button>
+      </div>
+
+      <!-- 1. 地心固定逆行計算 -->
+      <div id="retro-sub-1" class="sub-content-2 active">
+        <h4>地心固定逆行計算</h4>
+        <p class="settings-note">古典的な地心座標による逆行期間の検出。留日時・星座表記で出力。</p>
+        <form class="calc-form" id="form-retro">
+          <div class="form-row">
+            <label>天体</label>
+            <select id="retro-planet">
+              <option value="all">— 全惑星 —</option>
+              <option value="1">水星</option>
+              <option value="2">金星</option>
+              <option value="4">火星</option>
+              <option value="5">木星</option>
+              <option value="6">土星</option>
+              <option value="7">天王星</option>
+              <option value="8">海王星</option>
+              <option value="9">冥王星</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>開始日時（JST）</label>
+            <input type="datetime-local" id="retro-start" value="2024-01-01T00:00">
+          </div>
+          <div class="form-row">
+            <label>終了日時（JST）</label>
+            <input type="datetime-local" id="retro-end" value="2025-01-01T00:00">
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-retro" class="result-area"></div>
+      </div>
+
+      <!-- 3. 物理量逆行計算（天文学用） -->
+      <div id="retro-sub-3" class="sub-content-2">
+        <h4>物理量逆行計算（天文学用）</h4>
+        <p class="settings-note">生黄経(°)・角速度ω(°/day)・ピーク逆行速度を出力。星座ラベルなし。</p>
+        <form class="calc-form" id="form-retro-physical">
+          <div class="form-row">
+            <label>天体</label>
+            <select id="retro-phys-planet">
+              <option value="all">— 全惑星 —</option>
+              <option value="1">水星</option>
+              <option value="2">金星</option>
+              <option value="4">火星</option>
+              <option value="5">木星</option>
+              <option value="6">土星</option>
+              <option value="7">天王星</option>
+              <option value="8">海王星</option>
+              <option value="9">冥王星</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>開始日時（JST）</label>
+            <input type="datetime-local" id="retro-phys-start" value="2024-01-01T00:00">
+          </div>
+          <div class="form-row">
+            <label>終了日時（JST）</label>
+            <input type="datetime-local" id="retro-phys-end" value="2025-01-01T00:00">
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-retro-physical" class="result-area"></div>
+      </div>
+
+      <!-- 4. 逆行連続物理量計算 -->
+      <div id="retro-sub-4" class="sub-content-2">
+        <h4>逆行連続物理量計算</h4>
+        <p class="settings-note">逆行期間中の λ(°) / ω(°/day) を指定ステップで時系列出力。</p>
+        <form class="calc-form" id="form-retro-continuous">
+          <div class="form-row">
+            <label>天体</label>
+            <select id="retro-cont-planet">
+              <option value="1">水星</option>
+              <option value="2">金星</option>
+              <option value="4">火星</option>
+              <option value="5">木星</option>
+              <option value="6">土星</option>
+              <option value="7">天王星</option>
+              <option value="8">海王星</option>
+              <option value="9">冥王星</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>開始日時（JST）</label>
+            <input type="datetime-local" id="retro-cont-start" value="2024-01-01T00:00">
+          </div>
+          <div class="form-row">
+            <label>終了日時（JST）</label>
+            <input type="datetime-local" id="retro-cont-end" value="2025-01-01T00:00">
+          </div>
+          <div class="form-row">
+            <label>出力ステップ</label>
+            <select id="retro-cont-step">
+              <option value="0.04167">1時間</option>
+              <option value="0.25" selected>6時間</option>
+              <option value="1">1日</option>
+              <option value="3">3日</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-retro-continuous" class="result-area"></div>
+      </div>
+
+    </div>
+
+    <!-- 6. 惑星間アスペクト時系列 -->
+    <div id="astro-aspects-ts" class="sub-content">
+      <h3>惑星間アスペクト時系列</h3>
+      <form class="calc-form" id="form-aspects-ts">
+        <div class="form-row">
+          <label>天体 A</label>
+          <select id="asp-ts-planet-a">
+            <option value="10">太陽</option>
+            <option value="301">月</option>
+            <option value="1">水星</option>
+            <option value="2">金星</option>
+            <option value="4">火星</option>
+            <option value="5">木星</option>
+            <option value="6">土星</option>
+            <option value="7">天王星</option>
+            <option value="8">海王星</option>
+            <option value="9">冥王星</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>天体 B</label>
+          <select id="asp-ts-planet-b">
+            <option value="5">木星</option>
+            <option value="6">土星</option>
+            <option value="4">火星</option>
+            <option value="10">太陽</option>
+            <option value="301">月</option>
+            <option value="1">水星</option>
+            <option value="2">金星</option>
+            <option value="7">天王星</option>
+            <option value="8">海王星</option>
+            <option value="9">冥王星</option>
+          </select>
+        </div>
+        <div class="form-row form-row-top">
+          <label>アスペクト</label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" name="asp-ts-type" value="0"   checked> ☌ 合（0°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="30"        > ⚺ セミセクスタイル（30°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="45"        > ∠ セミスクエア（45°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="60"        > ⚹ セクスタイル（60°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="90"  checked> □ スクエア（90°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="120"       > △ トライン（120°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="135"       > ⚼ セスキスクエア（135°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="150"       > ⚻ クインカンクス（150°）</label>
+            <label><input type="checkbox" name="asp-ts-type" value="180" checked> ☍ オポジション（180°）</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>開始日時（JST）</label>
+          <input type="datetime-local" id="asp-ts-start" value="2024-01-01T00:00">
+        </div>
+        <div class="form-row">
+          <label>終了日時（JST）</label>
+          <input type="datetime-local" id="asp-ts-end" value="2025-01-01T00:00">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-aspects-ts" class="result-area"></div>
+    </div>
+
+    <!-- 7. 任意境界角度通過検出 -->
+    <div id="astro-boundary" class="sub-content">
+      <h3>任意境界角度通過検出</h3>
+      <form class="calc-form" id="form-boundary">
+        <div class="form-row">
+          <label>天体</label>
+          <select id="boundary-planet">
+            <option value="all">— 全天体 —</option>
+            <option value="10">太陽</option>
+            <option value="301">月</option>
+            <option value="1">水星</option>
+            <option value="2">金星</option>
+            <option value="4">火星</option>
+            <option value="5">木星</option>
+            <option value="6">土星</option>
+            <option value="7">天王星</option>
+            <option value="8">海王星</option>
+            <option value="9">冥王星</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>境界角度プリセット</label>
+          <select id="boundary-preset">
+            <option value="30">30° 刻み（12分割・星座境界）</option>
+            <option value="45">45° 刻み（8分割）</option>
+            <option value="60">60° 刻み（6分割）</option>
+            <option value="90">90° 刻み（4分割）</option>
+            <option value="custom">カスタム</option>
+          </select>
+        </div>
+        <div class="form-row" id="boundary-custom-row" style="display:none">
+          <label>カスタム角度（°）</label>
+          <input type="text" id="boundary-custom" placeholder="例: 0,15,30,45,90,180" value="">
+        </div>
+        <div class="form-row">
+          <label>開始日時（JST）</label>
+          <input type="datetime-local" id="boundary-start" value="2024-01-01T00:00">
+        </div>
+        <div class="form-row">
+          <label>終了日時（JST）</label>
+          <input type="datetime-local" id="boundary-end" value="2025-01-01T00:00">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-boundary" class="result-area"></div>
+    </div>
+
+    <!-- 8. 太陽黄経暦 -->
+    <div id="astro-solar-cal" class="sub-content">
+      <h3>太陽黄経暦（1° 刻み）</h3>
+      <form class="calc-form" id="form-solar-cal">
+        <div class="form-row">
+          <label>対象年</label>
+          <input type="number" id="solar-cal-year" value="2024" min="1900" max="2100">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-solar-cal" class="result-area"></div>
+    </div>
+  </section>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <!-- タブ 2: 天体観測モード -->
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <section id="tab-observation" class="tab-content">
+
+    <div id="obs-moon-phase" class="sub-content active">
+      <h3>月相イベント（8相検出）</h3>
+      <form class="calc-form" id="form-moon-phase">
+        <div class="form-row">
+          <label>開始日</label>
+          <input type="date" id="moon-phase-start" value="2024-01-01">
+        </div>
+        <div class="form-row">
+          <label>終了日</label>
+          <input type="date" id="moon-phase-end" value="2024-12-31">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-moon-phase" class="result-area"></div>
+    </div>
+
+    <div id="obs-moon-cont" class="sub-content">
+      <h3>月相連続変化（照度・位相角）</h3>
+      <form class="calc-form" id="form-moon-cont">
+        <div class="form-row">
+          <label>開始日</label>
+          <input type="date" id="moon-cont-start" value="2024-01-01">
+        </div>
+        <div class="form-row">
+          <label>終了日</label>
+          <input type="date" id="moon-cont-end" value="2024-01-31">
+        </div>
+        <div class="form-row">
+          <label>計算間隔</label>
+          <select id="moon-cont-interval">
+            <option value="1">1時間ごと</option>
+            <option value="3">3時間ごと</option>
+            <option value="6" selected>6時間ごと（推奨）</option>
+            <option value="12">12時間ごと</option>
+            <option value="24">24時間ごと</option>
+          </select>
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-moon-cont" class="result-area"></div>
+    </div>
+
+    <div id="obs-sunrise" class="sub-content">
+      <h3>太陽の出没時刻</h3>
+      <form class="calc-form" id="form-sunrise">
+        <div class="form-row">
+          <label>開始日</label>
+          <input type="date" id="sunrise-start" value="2024-06-21">
+        </div>
+        <div class="form-row">
+          <label>終了日</label>
+          <input type="date" id="sunrise-end" value="2024-06-21">
+        </div>
+        <div class="form-row">
+          <label>住所検索</label>
+          <div style="display:flex;gap:8px;flex:1">
+            <input type="text" id="sunrise-address" placeholder="例: 東京都新宿区" style="flex:1">
+            <button type="button" id="sunrise-geocode-btn" class="calc-btn" style="padding:6px 14px;font-size:13px">検索</button>
+          </div>
+        </div>
+        <div id="sunrise-geocode-result" style="font-size:12px;color:var(--text-muted);margin:-8px 0 4px 0;padding-left:160px"></div>
+        <div class="form-row">
+          <label>緯度（°）</label>
+          <input type="number" id="sunrise-lat" value="35.6895" step="0.0001">
+        </div>
+        <div class="form-row">
+          <label>経度（°）</label>
+          <input type="number" id="sunrise-lon" value="139.6917" step="0.0001">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-sunrise" class="result-area"></div>
+    </div>
+
+    <div id="obs-moonrise" class="sub-content">
+      <h3>月の出没時刻</h3>
+      <form class="calc-form" id="form-moonrise">
+        <div class="form-row">
+          <label>開始日</label>
+          <input type="date" id="moonrise-start" value="2024-01-01">
+        </div>
+        <div class="form-row">
+          <label>終了日</label>
+          <input type="date" id="moonrise-end" value="2024-01-31">
+        </div>
+        <div class="form-row">
+          <label>住所検索</label>
+          <div style="display:flex;gap:8px;flex:1">
+            <input type="text" id="moonrise-address" placeholder="例: 東京都新宿区" style="flex:1">
+            <button type="button" id="moonrise-geocode-btn" class="calc-btn" style="padding:6px 14px;font-size:13px">検索</button>
+          </div>
+        </div>
+        <div id="moonrise-geocode-result" style="font-size:12px;color:var(--text-muted);margin:-8px 0 4px 0;padding-left:160px"></div>
+        <div class="form-row">
+          <label>緯度（°）</label>
+          <input type="number" id="moonrise-lat" value="35.6895" step="0.0001">
+        </div>
+        <div class="form-row">
+          <label>経度（°）</label>
+          <input type="number" id="moonrise-lon" value="139.6917" step="0.0001">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-moonrise" class="result-area"></div>
+    </div>
+
+    <div id="obs-landscape" class="sub-content">
+      <h3>天体風景（高度・方位）</h3>
+      <form class="calc-form" id="form-landscape">
+        <div class="form-row">
+          <label>日時（JST）</label>
+          <input type="datetime-local" id="landscape-datetime" value="2024-06-21T12:00">
+        </div>
+        <div class="form-row">
+          <label>住所検索</label>
+          <div style="display:flex;gap:8px;flex:1">
+            <input type="text" id="landscape-address" placeholder="例: 東京都新宿区" style="flex:1">
+            <button type="button" id="landscape-geocode-btn" class="calc-btn" style="padding:6px 14px;font-size:13px">検索</button>
+          </div>
+        </div>
+        <div id="landscape-geocode-result" style="font-size:12px;color:var(--text-muted);margin:-8px 0 4px 0;padding-left:160px"></div>
+        <div class="form-row">
+          <label>緯度（°）</label>
+          <input type="number" id="landscape-lat" value="35.6895" step="0.0001">
+        </div>
+        <div class="form-row">
+          <label>経度（°）</label>
+          <input type="number" id="landscape-lon" value="139.6917" step="0.0001">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-landscape" class="result-area"></div>
+    </div>
+
+    <div id="obs-sekki" class="sub-content">
+      <h3>24節気カレンダー</h3>
+      <form class="calc-form" id="form-sekki">
+        <div class="form-row">
+          <label>対象年</label>
+          <input type="number" id="sekki-year" value="2024" min="1900" max="2100">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-sekki" class="result-area"></div>
+    </div>
+  </section>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <!-- タブ 3: 占星術モード -->
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <section id="tab-astrology" class="tab-content">
+
+    <!-- 3-1. 現代西洋占星術 -->
+    <div id="astro-modern" class="sub-content active">
+      <h3>現代西洋占星術（地心）</h3>
+      <div class="sub-menu sub-menu-2">
+        <button class="sub-btn-2 active" data-sub2="modern-natal">1. ホロスコープ計算</button>
+        <button class="sub-btn-2" data-sub2="modern-transit">2. 期間トランジット</button>
+        <button class="sub-btn-2" data-sub2="modern-ingress">3. 惑星星座運行</button>
+        <button class="sub-btn-2" data-sub2="modern-aspects">4. アスペクト計算</button>
+      </div>
+
+      <!-- 3-1-1 ホロスコープ計算（最初に動かすターゲット） -->
+      <div id="modern-natal" class="sub-content-2 active">
+        <h4>ホロスコープ計算（特定の日時）</h4>
+        <form class="calc-form" id="form-natal">
+          <div class="form-row">
+            <label>日時（JST）</label>
+            <input type="datetime-local" id="natal-datetime" value="2000-01-01T12:00">
+          </div>
+          <div class="form-row">
+            <label>住所検索</label>
+            <div style="display:flex;gap:8px;flex:1">
+              <input type="text" id="natal-address" placeholder="例: 東京都新宿区" style="flex:1">
+              <button type="button" id="natal-geocode-btn" class="calc-btn" style="padding:6px 14px;font-size:13px">検索</button>
+            </div>
+          </div>
+          <div id="natal-geocode-result" style="font-size:12px;color:var(--text-muted);margin:-8px 0 4px 0;padding-left:160px"></div>
+          <div class="form-row">
+            <label>緯度（°）</label>
+            <input type="number" id="natal-lat" value="35.6895" step="0.0001">
+          </div>
+          <div class="form-row">
+            <label>経度（°）</label>
+            <input type="number" id="natal-lon" value="139.6917" step="0.0001">
+          </div>
+          <div class="form-row">
+            <label>ハウス系</label>
+            <select id="natal-house">
+              <option value="placidus">プラシダス</option>
+              <option value="koch">コッホ</option>
+              <option value="equal">イコール</option>
+              <option value="whole">ホールサイン</option>
+              <option value="regiomontanus">レジオモンタヌス</option>
+              <option value="campanus">カンパヌス</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>星座系</label>
+            <select id="natal-zodiac">
+              <option value="tropical">トロピカル</option>
+              <option value="sidereal-lahiri">サイデリアル（ラーヒリー）</option>
+              <option value="sidereal-fagan">サイデリアル（フェーガン・ブラッドレー）</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-natal" class="result-area"></div>
+      </div>
+
+      <div id="modern-transit" class="sub-content-2">
+        <h4>ホロスコープ計算（期間トランジット）</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+          期間の中点（太陽黄経の角度中点）を算出し、その瞬間のホロスコープを表示します。
+        </p>
+        <form class="calc-form" id="form-modern-transit">
+          <div class="form-row">
+            <label>開始日時（JST）</label>
+            <input type="datetime-local" id="transit-start" value="2024-01-01T00:00">
+          </div>
+          <div class="form-row">
+            <label>終了日時（JST）</label>
+            <input type="datetime-local" id="transit-end" value="2024-01-31T23:59">
+          </div>
+          <div class="form-row">
+            <label>住所検索</label>
+            <div style="display:flex;gap:8px;flex:1">
+              <input type="text" id="transit-address" placeholder="例: 東京都新宿区" style="flex:1">
+              <button type="button" id="transit-geocode-btn" class="calc-btn" style="padding:6px 14px;font-size:13px">検索</button>
+            </div>
+          </div>
+          <div id="transit-geocode-result" style="font-size:12px;color:var(--text-muted);margin:-8px 0 4px 0;padding-left:160px"></div>
+          <div class="form-row">
+            <label>緯度（°）</label>
+            <input type="number" id="transit-lat" value="35.6895" step="0.0001">
+          </div>
+          <div class="form-row">
+            <label>経度（°）</label>
+            <input type="number" id="transit-lon" value="139.6917" step="0.0001">
+          </div>
+          <div class="form-row">
+            <label>ハウス系</label>
+            <select id="transit-house">
+              <option value="placidus">プラシダス</option>
+              <option value="koch">コッホ</option>
+              <option value="equal">イコール</option>
+              <option value="whole">ホールサイン</option>
+              <option value="regiomontanus">レジオモンタヌス</option>
+              <option value="campanus">カンパヌス</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>星座系</label>
+            <select id="transit-zodiac">
+              <option value="tropical">トロピカル</option>
+              <option value="sidereal-lahiri">サイデリアル（ラーヒリー）</option>
+              <option value="sidereal-fagan">サイデリアル（フェーガン・ブラッドレー）</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-modern-transit" class="result-area"></div>
+      </div>
+
+      <div id="modern-ingress" class="sub-content-2">
+        <h4>惑星星座運行計算（10惑星）</h4>
+        <form class="calc-form" id="form-modern-ingress">
+          <div class="form-row">
+            <label>開始日</label>
+            <input type="date" id="modern-ingress-start" value="2024-01-01">
+          </div>
+          <div class="form-row">
+            <label>終了日</label>
+            <input type="date" id="modern-ingress-end" value="2024-12-31">
+          </div>
+          <div class="form-row">
+            <label>惑星</label>
+            <select id="modern-ingress-planet">
+              <option value="all">— 全10惑星 —</option>
+              <option value="10">太陽</option>
+              <option value="301">月</option>
+              <option value="1">水星</option>
+              <option value="2">金星</option>
+              <option value="4">火星</option>
+              <option value="5">木星</option>
+              <option value="6">土星</option>
+              <option value="7">天王星</option>
+              <option value="8">海王星</option>
+              <option value="9">冥王星</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-modern-ingress" class="result-area"></div>
+      </div>
+
+      <div id="modern-aspects" class="sub-content-2">
+        <h4>アスペクト計算</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+          アスペクトは惑星間の角度差のため、星座系（トロピカル/サイデリアル）を変えても結果は変わりません。
+        </p>
+        <form class="calc-form" id="form-modern-aspects">
+          <div class="form-row">
+            <label>日時（JST）</label>
+            <input type="datetime-local" id="aspects-datetime" value="2000-01-01T12:00">
+          </div>
+          <div class="form-row">
+            <label>オーブ（許容角度）</label>
+            <select id="aspects-orb">
+              <option value="3">厳密（±3°）</option>
+              <option value="6" selected>標準（±6°）</option>
+              <option value="10">広範（±10°）</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-modern-aspects" class="result-area"></div>
+      </div>
+    </div>
+
+    <div id="astro-medieval" class="sub-content">
+      <h3>中世西洋占星術（地心）</h3>
+      <div class="sub-menu sub-menu-2">
+        <button class="sub-btn-2 active" data-sub2="medieval-chart">1. ホロスコープ計算</button>
+        <button class="sub-btn-2" data-sub2="medieval-ingress">2. 惑星星座運行計算</button>
+      </div>
+
+      <div id="medieval-chart" class="sub-content-2 active">
+        <h4>ホロスコープ計算（カンパヌス式・トロピカル固定）</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+          7惑星（太陽〜土星）使用。ハウス系・星座系は中世伝統に基づき固定。
+        </p>
+        <form class="calc-form" id="form-medieval-chart">
+          <div class="form-row">
+            <label>日時（JST）</label>
+            <input type="datetime-local" id="medieval-datetime" value="2000-01-01T12:00">
+          </div>
+          <div class="form-row">
+            <label>住所検索</label>
+            <div style="display:flex;gap:8px;flex:1">
+              <input type="text" id="medieval-address" placeholder="例: 東京都新宿区" style="flex:1">
+              <button type="button" id="medieval-geocode-btn" class="calc-btn" style="padding:6px 14px;font-size:13px">検索</button>
+            </div>
+          </div>
+          <div id="medieval-geocode-result" style="font-size:12px;color:var(--text-muted);margin:-8px 0 4px 0;padding-left:160px"></div>
+          <div class="form-row">
+            <label>緯度（°）</label>
+            <input type="number" id="medieval-lat" value="35.6895" step="0.0001">
+          </div>
+          <div class="form-row">
+            <label>経度（°）</label>
+            <input type="number" id="medieval-lon" value="139.6917" step="0.0001">
+          </div>
+          <div class="form-row">
+            <label>ハウス系</label>
+            <span style="padding:6px 0;font-size:13px;color:var(--text-muted)">カンパヌス（固定）</span>
+          </div>
+          <div class="form-row">
+            <label>星座系</label>
+            <span style="padding:6px 0;font-size:13px;color:var(--text-muted)">トロピカル（固定）</span>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-medieval-chart" class="result-area"></div>
+      </div>
+
+      <div id="medieval-ingress" class="sub-content-2">
+        <h4>惑星星座運行計算（土星まで）</h4>
+        <form class="calc-form" id="form-medieval-ingress">
+          <div class="form-row">
+            <label>開始日</label>
+            <input type="date" id="medieval-ingress-start" value="2024-01-01">
+          </div>
+          <div class="form-row">
+            <label>終了日</label>
+            <input type="date" id="medieval-ingress-end" value="2024-12-31">
+          </div>
+          <div class="form-row">
+            <label>惑星</label>
+            <select id="medieval-ingress-planet">
+              <option value="all">— 全7惑星 —</option>
+              <option value="10">太陽</option>
+              <option value="301">月</option>
+              <option value="1">水星</option>
+              <option value="2">金星</option>
+              <option value="4">火星</option>
+              <option value="5">木星</option>
+              <option value="6">土星</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-medieval-ingress" class="result-area"></div>
+      </div>
+    </div>
+
+    <!-- 3-3 ヘリオ占星術 -->
+    <div id="astro-helio-a" class="sub-content">
+      <h3>ヘリオ占星術（地心投影日心）</h3>
+      <div class="sub-menu sub-menu-2">
+        <button class="sub-btn-2 active" data-sub2="helio-chart">1. 惑星黄道座標 &amp; アスペクト</button>
+        <button class="sub-btn-2" data-sub2="helio-ts">2. 日心アスペクト時系列</button>
+      </div>
+
+      <div id="helio-chart" class="sub-content-2 active">
+        <h4>惑星黄道座標 &amp; アスペクト（地心投影日心・単一日時）</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+          太陽を原点とし、黄道面（地球の公転面）に射影した9惑星＋地球の黄道座標とアスペクトを計算します。<br>
+          黄緯は射影により 0 に潰してあります（占星術チャートと同じ黄道帯上の配置）。
+        </p>
+        <form class="calc-form" id="form-helio-chart">
+          <div class="form-row">
+            <label>日時（JST）</label>
+            <input type="datetime-local" id="helio-datetime" value="2000-01-01T12:00">
+          </div>
+          <div class="form-row">
+            <label>星座系</label>
+            <select id="helio-zodiac">
+              <option value="tropical">トロピカル</option>
+              <option value="sidereal-lahiri">サイデリアル（ラーヒリー）</option>
+              <option value="sidereal-fagan">サイデリアル（フェーガン・ブラッドレー）</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>オーブ（許容角度）</label>
+            <select id="helio-orb">
+              <option value="3">厳密（±3°）</option>
+              <option value="6" selected>標準（±6°）</option>
+              <option value="8">広範（±8°）</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-helio-chart" class="result-area"></div>
+      </div>
+
+      <div id="helio-ts" class="sub-content-2">
+        <h4>日心アスペクト時系列（期間検索）</h4>
+        <form class="calc-form" id="form-helio-ts">
+          <div class="form-row">
+            <label>開始日</label>
+            <input type="date" id="helio-ts-start" value="2024-01-01">
+          </div>
+          <div class="form-row">
+            <label>終了日</label>
+            <input type="date" id="helio-ts-end" value="2024-12-31">
+          </div>
+          <div class="form-row">
+            <label>惑星 A</label>
+            <select id="helio-ts-a">
+              <option value="1">水星</option>
+              <option value="2">金星</option>
+              <option value="399">地球</option>
+              <option value="4">火星</option>
+              <option value="5" selected>木星</option>
+              <option value="6">土星</option>
+              <option value="7">天王星</option>
+              <option value="8">海王星</option>
+              <option value="9">冥王星</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>惑星 B</label>
+            <select id="helio-ts-b">
+              <option value="1">水星</option>
+              <option value="2">金星</option>
+              <option value="399">地球</option>
+              <option value="4">火星</option>
+              <option value="5">木星</option>
+              <option value="6" selected>土星</option>
+              <option value="7">天王星</option>
+              <option value="8">海王星</option>
+              <option value="9">冥王星</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>アスペクト</label>
+            <div class="checkbox-group" id="helio-aspects-check">
+              <label><input type="checkbox" value="0" checked> ☌ 合（0°）</label>
+              <label><input type="checkbox" value="60"> ⚹ 六分（60°）</label>
+              <label><input type="checkbox" value="90" checked> □ 四分（90°）</label>
+              <label><input type="checkbox" value="120" checked> △ 三分（120°）</label>
+              <label><input type="checkbox" value="180" checked> ☍ 衝（180°）</label>
+            </div>
+          </div>
+          <button type="submit" class="calc-btn">計算</button>
+        </form>
+        <div id="result-helio-ts" class="result-area"></div>
+      </div>
+    </div>
+
+    <!-- 3-4 東洋占術計算基盤 -->
+    <div id="astro-oriental" class="sub-content">
+      <h3>東洋占術計算基盤（四柱推命・紫微斗数）</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">
+        命式/命盤スケルトンのみ。象意解釈・性格判断・運勢は含みません。
+      </p>
+      <div class="sub-menu sub-menu-2">
+        <button class="sub-btn-2 active" data-sub2="oriental-shichu">1. 四柱推命 — 命式スケルトン</button>
+        <button class="sub-btn-2" data-sub2="oriental-ziwei">2. 紫微斗数 — 命盤スケルトン</button>
+      </div>
+
+      <div id="oriental-shichu" class="sub-content-2 active">
+        <h4>四柱推命 — 命式スケルトン</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+          立春基準。月柱は節気（太陽黄経の15°刻み）を使用。
+        </p>
+        <form class="calc-form" id="form-shichu">
+          <div class="form-row">
+            <label>生年月日</label>
+            <input type="date" id="shichu-date" value="1990-05-15">
+          </div>
+          <div class="form-row">
+            <label>生時（JST）</label>
+            <input type="time" id="shichu-time" value="14:30">
+          </div>
+          <div class="form-row">
+            <label>性別</label>
+            <select id="shichu-gender">
+              <option value="male">男命</option>
+              <option value="female">女命</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">命式を算出</button>
+        </form>
+        <div id="result-shichu" class="result-area"></div>
+      </div>
+
+      <div id="oriental-ziwei" class="sub-content-2">
+        <h4>紫微斗数 — 命盤スケルトン</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+          グレゴリオ暦で入力すると農暦（旧暦）を自動算出します。BSP（JPL DE440s）使用。
+        </p>
+        <form class="calc-form" id="form-ziwei">
+          <div class="form-row">
+            <label>生年月日（グレゴリオ）</label>
+            <input type="date" id="ziwei-greg-date" value="1990-05-15">
+          </div>
+          <div class="form-row">
+            <label>生時（JST）</label>
+            <input type="time" id="ziwei-greg-time" value="12:00">
+          </div>
+          <div class="form-row">
+            <label>生時（子～亥）</label>
+            <select id="ziwei-hour-branch">
+              <option value="0">子時（23:00〜01:00）</option>
+              <option value="1">丑時（01:00〜03:00）</option>
+              <option value="2">寅時（03:00〜05:00）</option>
+              <option value="3">卯時（05:00〜07:00）</option>
+              <option value="4">辰時（07:00〜09:00）</option>
+              <option value="5">巳時（09:00〜11:00）</option>
+              <option value="6" selected>午時（11:00〜13:00）</option>
+              <option value="7">未時（13:00〜15:00）</option>
+              <option value="8">申時（15:00〜17:00）</option>
+              <option value="9">酉時（17:00〜19:00）</option>
+              <option value="10">戌時（19:00〜21:00）</option>
+              <option value="11">亥時（21:00〜23:00）</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>性別</label>
+            <select id="ziwei-gender">
+              <option value="male">男（陽）</option>
+              <option value="female">女（陰）</option>
+            </select>
+          </div>
+          <button type="submit" class="calc-btn">命盤を算出</button>
+        </form>
+        <p style="font-size:11px;color:var(--text-muted);margin:8px 0 0">
+          ※ 時刻は JST（日本標準時）で入力してください<br>
+          ※ 生時（子〜亥）は手動選択。自動入力の参考として、JST 時刻に合わせて選んでください
+        </p>
+        <div id="result-ziwei" class="result-area"></div>
+      </div>
+    </div>
+
+    <!-- 3-5 月のボイドタイム -->
+    <div id="astro-void" class="sub-content">
+      <h3>月のボイドタイム</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">
+        定義: 現代派（一般）— 月が現在星座内で最後のアスペクト〜次星座イングレスまでの期間。<br>
+        対象: 太陽・水星〜冥王星（9天体）、主要5相（exact）。最大31日間。
+      </p>
+      <form class="calc-form" id="form-void">
+        <div class="form-row">
+          <label>開始日</label>
+          <input type="date" id="void-start" value="2024-01-01">
+        </div>
+        <div class="form-row">
+          <label>終了日</label>
+          <input type="date" id="void-end" value="2024-01-07">
+        </div>
+        <button type="submit" class="calc-btn">計算</button>
+      </form>
+      <div id="result-void" class="result-area"></div>
+    </div>
+
+  </section>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <!-- タブ 4: 基準物理天体暦出力 -->
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <section id="tab-ephemeris" class="tab-content">
+
+    <div id="eph-planet" class="sub-content active">
+      <h3>惑星基準物理天体暦（Planet-Physics）</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">
+        地心（地球）基準で λ(t)・ω(t)・β(t) の連続物理量を JPL DE440s から出力します。<br>
+        星座名は付与しません（物理量のみ）。出力は CSV ダウンロード対応。
+      </p>
+      <form class="calc-form" id="form-phys-planet">
+        <div class="form-row">
+          <label for="phys-start">開始日時（JST）</label>
+          <input type="datetime-local" id="phys-start" value="2026-01-01T00:00">
+        </div>
+        <div class="form-row">
+          <label for="phys-end">終了日時（JST）</label>
+          <input type="datetime-local" id="phys-end" value="2026-12-31T00:00">
+        </div>
+        <div class="form-row">
+          <label for="phys-step">ステップ幅</label>
+          <select id="phys-step">
+            <option value="1h">1時間</option>
+            <option value="6h">6時間</option>
+            <option value="1d" selected>1日</option>
+            <option value="3d">3日</option>
+            <option value="7d">7日</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="phys-planet">対象天体</label>
+          <select id="phys-planet">
+            <option value="all">全惑星（太陽〜冥王星・月）</option>
+            <option value="10">太陽</option>
+            <option value="301">月</option>
+            <option value="1">水星</option>
+            <option value="2">金星</option>
+            <option value="4">火星</option>
+            <option value="5">木星</option>
+            <option value="6">土星</option>
+            <option value="7">天王星</option>
+            <option value="8">海王星</option>
+            <option value="9">冥王星</option>
+          </select>
+        </div>
+        <button type="submit">計算 &amp; 出力</button>
+      </form>
+      <div id="result-phys-planet" class="result-area"></div>
+    </div>
+  </section>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <!-- タブ 6: 暦変換計算 -->
+  <section id="tab-cal-conv" class="tab-content">
+    <div id="cal-conv-main" class="sub-content active">
+      <h3>📅 日付・暦変換</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">
+        ユリウス暦 / グレゴリオ暦 / JD / 修正 JD / Unix タイムスタンプを相互変換します。<br>
+        天体暦ファイル（BSP）不要。BC 年を含む歴史上の日付も計算可能。
+      </p>
+
+      <form id="form-cal-conv">
+        <div class="form-row">
+          <label>入力暦</label>
+          <select id="cal-conv-calendar">
+            <option value="auto">自動（1582-10-15 以降はグレゴリオ）</option>
+            <option value="gregorian">グレゴリオ暦（proleptic）</option>
+            <option value="julian">ユリウス暦</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>紀元</label>
+          <select id="cal-conv-era">
+            <option value="AD">AD（西暦）</option>
+            <option value="BC">BC（紀元前）</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>日付</label>
+          <input type="number" id="cal-conv-year"  placeholder="年" min="1" style="width:80px"> 年
+          <input type="number" id="cal-conv-month" placeholder="月" min="1" max="12" value="1" style="width:56px"> 月
+          <input type="number" id="cal-conv-day"   placeholder="日" min="1" max="31" value="1" style="width:56px"> 日
+        </div>
+        <div class="form-row">
+          <label>時刻 (JST)</label>
+          <input type="number" id="cal-conv-hour"   placeholder="時" min="0" max="23" value="0" style="width:56px"> 時
+          <input type="number" id="cal-conv-minute" placeholder="分" min="0" max="59" value="0" style="width:56px"> 分
+          <input type="number" id="cal-conv-second" placeholder="秒" min="0" max="59" value="0" style="width:56px"> 秒
+        </div>
+        <button type="submit" class="btn-calc">変換する</button>
+      </form>
+
+      <div id="result-cal-conv" style="margin-top:20px"></div>
+
+      <p style="font-size:11px;color:var(--text-muted);margin-top:16px">
+        ※ 1582年10月5〜14日はグレゴリオ暦に存在しない日付（改暦欠番）です。<br>
+        ※ 時刻は JST（日本標準時・UTC+9）で入力してください。出力の UTC・JST は自動変換されます。<br>
+        ※ 年の入力は天文学方式（Year 0 あり）ではなく歴史学方式（BC/AD）で入力してください。
+      </p>
+    </div>
+  </section>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <!-- タブ 7: AI相談シミュレーター -->
+  <section id="tab-ai-sim" class="tab-content">
+    <div id="ai-sim-main" class="sub-content active">
+      <h3>🤝 AI相談シミュレーター</h3>
+      <div class="placeholder" style="padding:40px 20px;text-align:center">
+        <p style="font-size:22px;margin:0 0 12px">🚧</p>
+        <p style="font-size:14px;font-weight:600;margin:0 0 8px">準備中</p>
+        <p style="font-size:12px;color:var(--text-muted);margin:0">
+          AI が相談者役を担い、ホロスコープ鑑定の練習ができる機能です。<br>
+          実装予定: 生年月日入力 → AI ペルソナ生成 → 対話形式で鑑定練習
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- タブ 5: 設定 -->
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <section id="tab-settings" class="tab-content">
+
+    <!-- 1. 天体暦・座標系 -->
+    <div id="settings-ephemeris" class="sub-content active">
+      <div class="settings-section">
+        <h3>使用する天体暦（BSP ファイル）</h3>
+        <div class="form-row">
+          <label for="settings-bsp">天体暦ファイル</label>
+          <select id="settings-bsp">
+            <option value="prod">de440s-modern.bsp（標準版 1873〜2100年）</option>
+            <option value="dev">de440s.bsp（開発用・フル）</option>
+          </select>
+        </div>
+        <p class="settings-note">
+          <strong>de440s-modern.bsp</strong>: 標準版（1873-01-01〜2100-12-31）、通常はこちら。<br>
+          <strong>de440s.bsp</strong>: フル版。より広い期間・高精度。ファイルサイズが大きい。
+        </p>
+      </div>
+      <div class="settings-section">
+        <h3>座標系</h3>
+        <div class="form-row">
+          <label for="settings-coord">黄道座標系</label>
+          <select id="settings-coord">
+            <option value="of-date">of-date（推奨）</option>
+            <option value="j2000">J2000.0（研究用）</option>
+          </select>
+        </div>
+        <p class="settings-note">
+          <strong>of-date</strong>: 観測日時点の春分点基準。歳差・章動・年周光行差を適用。Python/Skyfield と同等の精度（誤差 &lt; 1"）。<br>
+          <strong>J2000.0</strong>: 2000年1月1日 12:00 TT 基準の固定座標系。歳差・章動なし。光行時間補正のみ適用。カタログ比較・研究用。
+        </p>
+      </div>
+      <div class="settings-section">
+        <button id="settings-apply-btn" class="calc-btn">設定を適用する</button>
+        <p id="settings-apply-status" class="settings-note" style="margin-top:10px"></p>
+      </div>
+    </div>
+
+    <!-- 2. 更新履歴 -->
+    <div id="settings-changelog" class="sub-content">
+      <div class="settings-section">
+        <h3>更新履歴</h3>
+        <div id="changelog-content">
+          <p style="color:var(--text-muted);font-size:13px">「2. 更新履歴」タブを開くと読み込まれます。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ライセンス情報 -->
+    <div id="settings-license" class="sub-content">
+      <div class="settings-section">
+        <h3>ライセンス情報</h3>
+
+        <div class="license-block">
+          <div class="license-title">アプリケーションコード</div>
+          <div class="license-body">
+            MIT License<br>
+            © 2026 しがたかし / Stella.me OS プロジェクト
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">天体暦データ（JPL DE440s）</div>
+          <div class="license-body">
+            NASA / Jet Propulsion Laboratory — Public Domain<br>
+            <a href="https://ssd.jpl.nasa.gov/planets/eph_export.html" target="_blank" rel="noopener">
+              https://ssd.jpl.nasa.gov/planets/eph_export.html
+            </a>
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">天体計算エンジンの参考実装</div>
+          <div class="license-body">
+            <strong>Skyfield</strong>（Brandon Rhodes）— 計算アルゴリズム・設計思想の参考<br>
+            <a href="https://rhodesmill.org/skyfield/" target="_blank" rel="noopener">https://rhodesmill.org/skyfield/</a><br>
+            <span style="font-size:11px;color:var(--text-muted)">
+              本アプリは Skyfield のコードを直接使用していませんが、座標変換・光行時間補正・
+              月の交点計算（IAU 式）等のアルゴリズム設計を参考にしています。
+            </span>
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">参考文献</div>
+          <div class="license-body">
+            <strong>Jean Meeus, "Astronomical Algorithms" 2nd ed.</strong> — Willmann-Bell, Inc.<br>
+            <span style="font-size:11px;color:var(--text-muted)">
+              座標変換・章動・歳差・月の交点（IAU 式）・光行差・ハウスカスプ算法（Ch.24）等に使用
+            </span>
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">品位計算（エッセンシャルディグニティ）</div>
+          <div class="license-body">
+            <strong>William Lilly, "Christian Astrology" (1647)</strong><br>
+            <span style="font-size:11px;color:var(--text-muted)">
+              中世西洋占星術のターム（界）対応表（Lilly Terms）の出典。
+              Stella.me OS の品位計算モジュール（dignities/tables.py）に収録。
+            </span>
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">ハウス計算アルゴリズム</div>
+          <div class="license-body">
+            <strong>Placidus</strong>: 半弧法（Newton-Raphson 収束） — Meeus Ch.24 準拠<br>
+            <strong>Koch</strong>: 誕生地法（Birthplace System）<br>
+            <strong>Regiomontanus</strong>: 赤道等分投影法<br>
+            <strong>Campanus</strong>: 主垂直圏 30° 等分（地心専用）<br>
+            <strong>Equal / Whole Signs</strong>: ASC 基準 30° 等分 / 星座全体<br>
+            <span style="font-size:11px;color:var(--text-muted)">
+              実装参考: Jean Meeus "Astronomical Algorithms" Ch.24 および
+              spacefield/house_systems.py（Stella.me OS プロジェクト内参照実装）
+            </span>
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">出力データのライセンス（予定）</div>
+          <div class="license-body">
+            <span style="color:var(--accent)">CC BY-NC-SA 4.0</span>（表示・非営利・継承）<br>
+            本アプリが生成する天体暦データ（TXT 等）には、ライセンス整備後に上記を付与予定。<br>
+            <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ja" target="_blank" rel="noopener">
+              https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ja
+            </a>
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">クレジット表記（.txt 出力時）</div>
+          <div class="license-body">
+            りんご力学 開発者：オンラインカウンセリングルーム「しがたかしホッとライン」運営：志賀高史<br>
+            <a href="https://www.shigatkashi.com" target="_blank" rel="noopener">https://www.shigatkashi.com</a>
+          </div>
+        </div>
+
+        <div class="license-block">
+          <div class="license-title">連絡先</div>
+          <div class="license-body">
+            <a href="mailto:shigatakashi.cw@gmail.com">shigatakashi.cw@gmail.com</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+    </main><!-- /#content-area -->
+
+  </div><!-- /#layout -->
+
+</div><!-- /#app -->
+
+<script type="module" src="../src/app.js?v=20260331"></script>
+</body>
+</html>

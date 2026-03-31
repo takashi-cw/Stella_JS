@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ヘルプ — りんご力学</title>
+  <link rel="stylesheet" href="style.css?v=20260331">
+  <script
+    src="https://www.paypal.com/sdk/js?client-id=BAASoOqAORUVCIqKhCcpT_HArKV_NBz0HW4rXRjrQ3ETMu5YLd_9x8eHd-y7WeBp8bkPTSKbCjkp7NL-nU&components=hosted-buttons&disable-funding=venmo&currency=JPY">
+  </script>
+  <style>
+    /* ── ヘルプページ専用レイアウト ── */
+    #help-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+      line-height: 1.8;
+    }
+    #help-wrap h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      border-left: 3px solid var(--accent, #7c9cbf);
+      padding-left: 0.75rem;
+      margin: 2.5rem 0 0.75rem;
+      color: var(--text-primary, #e0e0e0);
+    }
+    #help-wrap h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.75rem 0 0.5rem;
+      color: var(--text-primary, #e0e0e0);
+    }
+    #help-wrap p, #help-wrap li {
+      font-size: 0.92rem;
+      color: var(--text-secondary, #aaa);
+      margin: 0.4rem 0;
+    }
+    #help-wrap ul {
+      padding-left: 1.4rem;
+    }
+    #help-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0 1.25rem;
+    }
+    #help-wrap th {
+      text-align: left;
+      padding: 0.45rem 0.75rem;
+      background: var(--bg-elevated, #1e2330);
+      color: var(--text-muted, #888);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border, #2a2f3e);
+    }
+    #help-wrap td {
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid var(--border, #2a2f3e);
+      color: var(--text-secondary, #aaa);
+      vertical-align: top;
+    }
+    #help-wrap .note {
+      background: var(--bg-elevated, #1e2330);
+      border-left: 3px solid var(--accent, #7c9cbf);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+      color: var(--text-secondary, #aaa);
+    }
+    #help-wrap .warn {
+      border-left-color: #c97f3a;
+    }
+    #help-wrap hr {
+      border: none;
+      border-top: 1px solid var(--border, #2a2f3e);
+      margin: 2rem 0;
+    }
+    .donate-section {
+      text-align: center;
+      padding: 2rem 1rem;
+      background: var(--bg-elevated, #1e2330);
+      border-radius: 8px;
+      margin-top: 3rem;
+    }
+    .donate-section p {
+      margin-bottom: 1rem;
+    }
+    .donate-btn {
+      display: inline-block;
+      background: #f0b429;
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.65rem 1.8rem;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .donate-btn:hover { opacity: 0.85; }
+    .back-link {
+      display: inline-block;
+      font-size: 0.88rem;
+      color: var(--text-muted, #888);
+      text-decoration: none;
+      margin-bottom: 1.5rem;
+    }
+    .back-link:hover { color: var(--text-secondary, #aaa); }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>🍎 りんご力学</h1>
+    <p class="subtitle">Pure astronomical/astrological engine — JPL DE Ephemeris direct reader —</p>
+  </header>
+
+  <div id="help-wrap">
+
+    <a href="index.html" class="back-link">← アプリに戻る</a>
+
+    <h2>このアプリについて</h2>
+    <p>
+      <strong>りんご力学</strong>は、NASA/JPL が公開する惑星暦（DE440s）を
+      ブラウザで直接読み込み、IAU 規格に準拠した高精度な天文計算を行うツールです。
+    </p>
+    <p>
+      「占星術に物理根拠を」というコンセプトのもと、
+      <strong>計算の根拠を公開し、第三者が検証できる</strong>ことを設計の中心に置いています。
+      数値の解釈（占星術的な意味付け）はユーザーに委ね、物理計算の部分だけを誠実に提供します。
+    </p>
+    <div class="note">
+      完全にブラウザ内で動作します。入力した日時・場所のデータが外部サーバーに送信されることはありません。
+    </div>
+
+    <hr>
+
+    <h2>メニューガイド</h2>
+
+    <h3>📊 天文計算</h3>
+    <p>惑星・月・太陽の位置を任意の日時・場所で計算します。</p>
+    <ul>
+      <li><strong>惑星位置</strong> — 黄経・黄緯・距離（AU）、視赤経・赤緯、逆行マーク（℞）</li>
+      <li><strong>太陽・月の出没</strong> — 指定地点での出没時刻・南中時刻</li>
+      <li><strong>月相</strong> — 月齢・満月/新月の日時</li>
+      <li><strong>節気</strong> — 二十四節気の日時（太陽黄経を基準）</li>
+      <li><strong>アスペクト</strong> — 惑星間の角度関係</li>
+    </ul>
+
+    <h3>🔭 天体観測</h3>
+    <p>指定地点からの天体の高度・方位・可視情報を提供します。</p>
+    <ul>
+      <li>観測地点の緯度経度・タイムゾーンを設定して使用します</li>
+      <li>大気差補正を含むトポセントリック（観測地点基準）計算</li>
+    </ul>
+
+    <h3>🔮 占星術</h3>
+    <p>各種占星術流派に対応したホロスコープ計算です。</p>
+    <ul>
+      <li><strong>現代西洋占星術</strong> — ネイタル・トランジット（Placidus/Koch 等のハウス対応）</li>
+      <li><strong>中世西洋占星術</strong> — カンパヌス式ハウス</li>
+      <li><strong>ヘリオ占星術</strong> — 太陽中心座標系</li>
+      <li><strong>東洋占術</strong> — 四柱推命・紫微斗数のスケルトン生成</li>
+      <li><strong>ボイドタイム</strong> — 月が次のサインに入るまでのアスペクトなし期間</li>
+    </ul>
+    <div class="note">
+      <strong>座標系について（ジオセントリック vs トポセントリック）</strong><br>
+      <strong>中世西洋占星術</strong>はトポセントリック（観測地点基準）で計算しています。<br>
+      中世占星術は「ジオセントリック計算」と説明されることがありますが、
+      中世の占星家が実際にやっていたことは「その場所で夜空を見上げること」でした。
+      「ジオセントリック」という概念自体が地動説以降に整理されたフレームワークであり、
+      当時の人に「地球の中心から見る」という感覚はありませんでした。
+      本アプリは「観測者がいる地点から見た空」という実態に忠実な計算を採用しています。
+    </div>
+
+    <h3>📋 基準物理天体暦</h3>
+    <p>
+      複数の天体の位置を一括で計算し、一覧表示します。
+      占星術師が自作ツールの数値を照合する「検証基準」としての利用を想定しています。
+    </p>
+    <ul>
+      <li>指定期間の惑星位置を日次または任意間隔で一覧出力</li>
+      <li><strong>.txt 形式でダウンロード可能</strong>（メタ情報・ライセンス記載付き、UTF-8 タブ区切り）</li>
+    </ul>
+    <div class="note">
+      ダウンロードした .txt ファイルは、ご利用の端末の標準ダウンロード保存先に保存されます。<br>
+      iOS の場合は「ファイル」アプリ → 「ダウンロード」フォルダをご確認ください。<br>
+      Android・PC（Windows / Mac）では、ブラウザの「ダウンロード」フォルダが標準保存先です。<br>
+      ファイルはタブ区切り形式（TSV）です。Excel / Numbers / Google スプレッドシートで開くと列が整列して見やすくなります。
+    </div>
+    <div class="note warn">
+      この数値データは <strong>物理的に正確な計算結果</strong>です。
+      占星術流派によっては異なる計算基準（アヤナムシャ等）を使用する場合があります。
+      各ツールとの数値比較には、座標系の違いにご注意ください。
+    </div>
+
+    <h3>📅 暦変換計算</h3>
+    <p>日付・時刻の相互変換ツールです。</p>
+    <ul>
+      <li>グレゴリオ暦 ↔ ユリウス暦 ↔ ユリウス日（JD）↔ 修正ユリウス日（MJD）</li>
+      <li>Unix タイムスタンプ変換</li>
+      <li>紀元前年（BC 表記）対応</li>
+      <li>JST 入力 → 各形式への変換</li>
+    </ul>
+
+    <h3>🤝 AI 相談シミュレーター</h3>
+    <p>
+      ブラウザ内で動作するローカル AI（2B モデル）を使った実験的機能です。
+      データが外部に送信されないプライバシー重視の設計です。
+    </p>
+    <div class="note warn">
+      現在は実験段階です。応答品質はオンライン AI サービスとは異なります。
+    </div>
+
+    <h3>⚙️ 設定</h3>
+    <ul>
+      <li><strong>天体暦ファイル</strong> — de440s-modern.bsp（標準版 1873〜2100年）を使用</li>
+      <li><strong>座標系</strong> — of-date（推奨・歳差・章動・光行差適用）/ J2000.0（固定座標系・研究用）</li>
+      <li><strong>更新履歴</strong> — アプリの変更記録</li>
+      <li><strong>ライセンス情報</strong> — 使用データ・ライブラリのライセンス</li>
+    </ul>
+
+    <hr>
+
+    <h2>計算精度について</h2>
+
+    <h3>JPL DE440s を直接参照</h3>
+    <p>
+      りんご力学は NASA/JPL が公開する惑星暦 DE440s（1550〜2650年対応）を
+      ブラウザで直接読み込み、Chebyshev 多項式で位置を補間します。
+      中間ファイルや再加工を一切挟まないため、<strong>JPL の原本精度をそのまま利用</strong>できます。
+    </p>
+    <p>適用している補正:</p>
+    <ul>
+      <li>IAU 2006 歳差 + IAU 2000B 章動（of-date 黄道座標）</li>
+      <li>速度ベクトル法による光行差補正</li>
+      <li>トポセントリック補正（観測地点基準）</li>
+      <li>ΔT（時刻系補正: UTC → TT → TDB）</li>
+    </ul>
+
+    <h3>Swiss Ephemeris との比較</h3>
+    <p>
+      多くの占星術ソフトが採用する Swiss Ephemeris は、
+      JPL DE431 を独自パラメータで Chebyshev 再近似した形式です。
+      著者による定量的分析（Zenodo, 2026）では、この再近似による精度損失が以下のとおり計測されました:
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>天体</th><th>最大誤差（秒角）</th><th>軌道上のズレ（参考）</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>月</td><td>47.72″（0.013°）</td><td>約 89 km（東京〜名古屋間）</td></tr>
+        <tr><td>水星</td><td>6.70″</td><td>約 2,500〜7,200 km</td></tr>
+        <tr><td>太陽</td><td>3.17″</td><td>約 2,300 km</td></tr>
+        <tr><td>金星</td><td>3.92″</td><td>—</td></tr>
+        <tr><td>火星</td><td>2.41″</td><td>—</td></tr>
+        <tr><td>木星</td><td>0.74″</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      JPL のバージョン間差（DE431 → DE440s）は月で 0.004 秒角のため、
+      Swiss Ephemeris の再近似誤差はバージョン差の約 <strong>12,000 倍</strong>に相当します。
+    </p>
+
+    <div class="note">
+      本比較は Swiss Ephemeris の技術的な否定を目的とするものではありません。
+      3.3 GB を 15 MB に圧縮した設計は合理的な判断であり、30年間の業界標準としての貢献は明白です。
+      この比較が示すのは「計算基準の違いによる数値差の大きさ」です。<br>
+      → 詳細論文: <a href="https://doi.org/10.5281/zenodo.19228727" target="_blank" rel="noopener">DOI 10.5281/zenodo.19228727</a>（CC BY 4.0）
+    </div>
+
+    <hr>
+
+    <h2>データ・ライセンスについて</h2>
+
+    <table>
+      <thead>
+        <tr><th>データ・ライブラリ</th><th>ライセンス</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>NASA JPL DE440s<br><small>（惑星暦バイナリファイル）</small></td>
+          <td>Public Domain</td>
+          <td>天体位置計算の基準データ</td>
+        </tr>
+        <tr>
+          <td>Stella-JS<br><small>（計算エンジン本体）</small></td>
+          <td>MIT License</td>
+          <td>ブラウザで動作する天文計算ライブラリ</td>
+        </tr>
+        <tr>
+          <td>計算結果データ（.txt 出力）</td>
+          <td>CC BY-NC-SA 4.0</td>
+          <td>非商用・出典明記のもとで利用可能</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      本アプリが出力する数値データは
+      <strong>NASA JPL が公開したパブリックドメインデータを原本として計算した結果</strong>です。
+      商用利用・再配布の際は CC BY-NC-SA 4.0 の条件に従ってください。
+    </p>
+
+    <hr>
+
+    <h2>開発者について</h2>
+
+    <p>
+      志賀高史 — オンラインカウンセリングルーム「<a href="https://www.shigatkashi.com" target="_blank" rel="noopener">しがたかしホッとライン</a>」運営
+    </p>
+
+    <h3>📄 関連論文（査読なし・Zenodo 公開）</h3>
+
+    <ul>
+      <li>
+        Swiss Ephemeris「圧縮」の実態検証 — DE431 三角比較による定量的分析<br>
+        <small>Quantitative Analysis of Swiss Ephemeris "Compression" — Triangular Comparison with DE431</small><br>
+        <a href="https://zenodo.org/records/19228726" target="_blank" rel="noopener">zenodo.org/records/19228726</a>
+      </li>
+      <li>
+        Swiss Ephemeris「正しいが危険」な入力設計の検証 — 古代天体観測記録による7つの罠の定量化<br>
+        <small>Quantitative Assessment of Seven Input-Layer Traps in Swiss Ephemeris — Cross-Validation with Ancient Astronomical Records from Three Civilizations</small><br>
+        <a href="https://doi.org/10.5281/zenodo.19270444" target="_blank" rel="noopener">doi.org/10.5281/zenodo.19270444</a>
+      </li>
+      <li>
+        AI 生成コード時代のライセンス盲点 — バイブコーディングが生む見えない依存チェーン<br>
+        <small>Hidden Dependency Chains in AI-Assisted Development: A Case Study of AGPL License Contamination in Astronomical Software</small><br>
+        <a href="https://doi.org/10.5281/zenodo.19341999" target="_blank" rel="noopener">doi.org/10.5281/zenodo.19341999</a>
+      </li>
+    </ul>
+
+    <h3>📚 著書</h3>
+
+    <ul>
+      <li>
+        『Python・Skyfield で設計する天文・占星術システム — Skyfield のその先へ —』<br>
+        <a href="https://www.amazon.co.jp/dp/B0GTHWKRYY" target="_blank" rel="noopener">Amazon Kindle</a>
+      </li>
+    </ul>
+
+    <hr>
+
+    <!-- カンパセクション -->
+    <div class="donate-section">
+      <p>りんご力学は完全無料のツールです。<br>役に立ったと感じたら、開発のサポートをいただけると嬉しいです。</p>
+      <div id="paypal-container-LEW6Q5UAFJ3Y2" style="max-width:400px; margin:0 auto;"></div>
+      <script>
+        paypal.HostedButtons({
+          hostedButtonId: "LEW6Q5UAFJ3Y2",
+        }).render("#paypal-container-LEW6Q5UAFJ3Y2");
+      </script>
+      <p style="font-size:0.8rem; margin-top:0.75rem; opacity:0.6;">任意・スキップ可能です</p>
+    </div>
+
+    <p style="text-align:center; font-size:0.8rem; margin-top:2rem; opacity:0.4;">
+      りんご力学 / Stella-JS — <a href="index.html" style="color:inherit;">← アプリに戻る</a>
+    </p>
+
+  </div><!-- /#help-wrap -->
+</div><!-- /#app -->
+
+</body>
+</html>
