@@ -4800,7 +4800,7 @@ async function loadChangelog() {
 
   el.innerHTML = '<p style="color:var(--text-muted);font-size:13px">読み込み中…</p>';
   try {
-    const res = await fetch('./CHANGELOG.md');
+    const res = await fetch('./CHANGELOG.md', { cache: 'no-cache' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     el.innerHTML = _simpleMarkdown(text);
