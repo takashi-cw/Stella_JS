@@ -452,10 +452,9 @@ function groupRetrogradePeriods(stations) {
   return periods;
 }
 
-// 初期ロード: de440s-modern.bsp → de440s.bsp（開発用フル版）の順に試みる
+// 初期ロード: de440s-modern.bsp
 const settingsBsp = document.getElementById('settings-bsp');
 initBsp(BSP_PATH_PROD)
-  .catch(() => initBsp('data/de440s.bsp'))
   .catch(e => showBspError(e.message));
 
 // ── 設定の適用ボタン ─────────────────────────────────────────────────
@@ -463,8 +462,8 @@ document.getElementById('settings-apply-btn').addEventListener('click', async ()
   const bspSel   = document.getElementById('settings-bsp');
   const coordSel = document.getElementById('settings-coord');
   const statusEl = document.getElementById('settings-apply-status');
-  const bspPath  = bspSel.value === 'dev' ? 'data/de440s.bsp' : BSP_PATH_PROD;
-  const bspLabel = bspSel.value === 'dev' ? 'de440s.bsp（フル）' : 'de440s-modern.bsp（標準版）';
+  const bspPath  = BSP_PATH_PROD;
+  const bspLabel = 'de440s-modern.bsp（標準版）';
   const coordLabel = coordSel.value === 'j2000' ? 'J2000.0' : 'of-date（推奨）';
 
   // 座標系は即時反映
