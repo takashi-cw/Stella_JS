@@ -638,10 +638,19 @@ header h1:hover { opacity: 0.75; }
   flex-shrink: 0;
 }
 
+/* ── ジオコーディング結果 ──────────────────────────────────────── */
+.geocode-result {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: -8px 0 4px 0;
+  padding-left: 160px;
+}
+
 /* ── レスポンシブ ─────────────────────────────────────────────── */
 @media (max-width: 600px) {
   /* フォーム */
   .form-row { flex-direction: column; align-items: flex-start; }
+  .geocode-result { padding-left: 0; }
   .form-row label { width: auto; }
   .form-row input, .form-row select { width: 100%; }
 
