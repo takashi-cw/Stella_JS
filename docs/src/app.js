@@ -181,13 +181,16 @@ function computeApparent(naifId, jdTdb, opts = {}) {
  * @returns {{ lon: number, lat: number, dist: number, speedKmS: number }}
  *   dist は AU、speedKmS は公転速度 km/s
  */
-function computeHeliocentric(naifId, jdTdb) {
+function computeHeliocentric(naifId, jdTdb, opts = {}) {
   const pos = bspFile.computePosition(naifId, NAIF.SUN, jdTdb);
   const [x, y, z] = pos;
 
   const ecl = settings.coordSystem === 'j2000'
     ? icrsToJ2000Ecliptic(x, y, z)
     : icrsToEcliptic(x, y, z, jdTdb);
+
+  // lonOnly: true の場合は速度計算（BSP 2回分）をスキップ
+  if (opts.lonOnly) return { lon: ecl.lon };
 
   // 公転速度: 1時間中心差分（|Δr| / 3600 s → km/s）
   const DT_DAY = 1 / 24;
@@ -2725,13 +2728,18 @@ document.getElementById('form-helio-ts').addEventListener('submit', async e => {
   showLoading('result-helio-ts', '計算中…', '日心アスペクトの通過時刻を二分探索');
   await yieldFrame();
 
-  const calcFnA = jd => computeHeliocentric(naifA, jdUtcToTdb(jd));
-  const calcFnB = jd => computeHeliocentric(naifB, jdUtcToTdb(jd));
+  // アスペクト検索には lon のみ必要。lonOnly: true で BSP 読み取りを1回に削減
+  const calcFnA = jd => computeHeliocentric(naifA, jdUtcToTdb(jd), { lonOnly: true });
+  const calcFnB = jd => computeHeliocentric(naifB, jdUtcToTdb(jd), { lonOnly: true });
 
   const allEvents = [];
   for (const aspAngle of aspAngles) {
+    // アスペクトごとに1フレーム譲り、ブラウザが固まって見えるのを防ぐ
+    showLoading('result-helio-ts', '計算中…', `${aspAngle}° アスペクトを検索中`);
+    await yieldFrame();
+
     const events = detectAspectCrossings(calcFnA, calcFnB, aspAngle, startJD, endJD, {
-      stepHours: 12,
+      stepDays: 0.5,
       precisionHours: 0.01,
     });
     const def = ASPECT_DEFS[aspAngle] ?? { name: `${aspAngle}°`, symbol: '' };
@@ -2753,8 +2761,8 @@ document.getElementById('form-helio-ts').addEventListener('submit', async e => {
       <td>${nameA}</td>
       <td>${ev.symbol} ${ev.name}（${ev.aspAngle}°）</td>
       <td>${nameB}</td>
-      <td>${ev.lon1.toFixed(3)}°</td>
-      <td>${ev.lon2.toFixed(3)}°</td>
+      <td>${ev.lonA.toFixed(3)}°</td>
+      <td>${ev.lonB.toFixed(3)}°</td>
     </tr>`
   ).join('');
 
