@@ -29,6 +29,7 @@ import {
   housesWholeSigns, housesRegiomontanus, housesCampanus,
   getAllAspects, MAJOR_ASPECTS,
   detectStationPoint, AVG_SPEEDS, calcSyzygy,
+  circularMeanLongitude, calculateOptimalSampleCount,
   getLunarDate,
   BSP_PATH_DEV, BSP_PATH_PROD,
   NAIF,
@@ -1996,10 +1997,31 @@ document.getElementById('form-modern-transit').addEventListener('submit', e => {
     zodiac === 'sidereal-fagan'  ? ayanamsha(startJdTdb, AYANAMSHA.FAGAN_BRADLEY) :
     0;
 
-  // 太陽黄経の角度中点を求める
-  const lonStart  = normAngle(computeApparent(NAIF.SUN, startJdTdb).lon - ayanamshaVal);
-  const lonEnd    = normAngle(computeApparent(NAIF.SUN, endJdTdb).lon   - ayanamshaVal);
-  const midLon    = solarAngularMidpoint(lonStart, lonEnd);
+  const periodDays = endJdTdb - startJdTdb;
+
+  // 代表黄経の決定
+  // ≤31日: 角度中点基準法（始点・終点の角度中点）
+  // >31日: 運動学的平均法（複数サンプルの円周角平均）— Python版 transits.py 準拠
+  let midLon;
+  let method;
+
+  if (periodDays <= 31) {
+    const lonStart = normAngle(computeApparent(NAIF.SUN, startJdTdb).lon - ayanamshaVal);
+    const lonEnd   = normAngle(computeApparent(NAIF.SUN, endJdTdb).lon   - ayanamshaVal);
+    midLon = solarAngularMidpoint(lonStart, lonEnd);
+    method = '角度中点基準法';
+  } else {
+    // 期間と惑星速度から最適サンプル数を算出し、等間隔にサンプリング
+    const numSamples = calculateOptimalSampleCount(periodDays, 'Sun');
+    const sampleLons = [];
+    for (let i = 0; i < numSamples; i++) {
+      const sampleJd  = startJdTdb + (periodDays * i / (numSamples - 1));
+      const sampleLon = normAngle(computeApparent(NAIF.SUN, sampleJd).lon - ayanamshaVal);
+      sampleLons.push(sampleLon);
+    }
+    midLon = circularMeanLongitude(sampleLons);
+    method = '運動学的平均法';
+  }
 
   // 二分探索: 太陽が midLon を通過する JD（期間内）
   function sunLonDev(jdTdb) {
@@ -2023,9 +2045,6 @@ document.getElementById('form-modern-transit').addEventListener('submit', e => {
     }
     midJdTdb = (lo + hi) / 2;
   }
-
-  const periodDays = endJdTdb - startJdTdb;
-  const method = periodDays <= 31 ? '角度中点基準法' : '角度中点基準法（31日超）';
 
   // ハウス計算
   let cusps, angles;
