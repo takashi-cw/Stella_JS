@@ -519,12 +519,15 @@ const BC_CATEGORY_LABELS = {
   'settings':    '⚙️ 設定',
 };
 
+let _bcCurrentTabId = null;
+
 function updateBreadcrumb(tabId, menuText) {
   const bc     = document.getElementById('breadcrumb');
   const catEl  = document.getElementById('bc-category');
   const menuEl = document.getElementById('bc-menu');
   const sep2   = document.querySelector('#breadcrumb .bc-sep2');
   if (!bc || !catEl || !menuEl) return;
+  _bcCurrentTabId = tabId;
   catEl.textContent  = BC_CATEGORY_LABELS[tabId] ?? tabId;
   menuEl.textContent = menuText ?? '';
   if (sep2) sep2.style.visibility = menuText ? 'visible' : 'hidden';
@@ -534,9 +537,20 @@ function updateBreadcrumb(tabId, menuText) {
 function resetBreadcrumb() {
   const bc = document.getElementById('breadcrumb');
   if (bc) bc.classList.remove('bc-visible');
+  _bcCurrentTabId = null;
 }
 
 document.getElementById('breadcrumb-home')?.addEventListener('click', showWelcome);
+
+// カテゴリ部分タップ → サイドバーを開いて該当カテゴリを展開
+document.getElementById('bc-category')?.addEventListener('click', () => {
+  if (!_bcCurrentTabId) return;
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  sidebar.classList.add('open');
+  document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+  document.querySelector(`.nav-group[data-tab="${_bcCurrentTabId}"]`)?.classList.add('open');
+});
 
 // ── ウェルカム：ロゴクリック ──────────────────────────────────────
 document.querySelector('header h1')?.addEventListener('click', showWelcome);

@@ -708,18 +708,24 @@ body.is-standalone #breadcrumb.bc-visible {
   display: flex;
 }
 
-#breadcrumb-home {
+#breadcrumb-home,
+#bc-category {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.85rem;
   padding: 0 2px;
   color: var(--accent);
   line-height: 1;
   flex-shrink: 0;
+  font-size: inherit;
 }
 
-#breadcrumb-home:active {
+#breadcrumb-home {
+  font-size: 0.85rem;
+}
+
+#breadcrumb-home:active,
+#bc-category:active {
   opacity: 0.6;
 }
 
