@@ -13,7 +13,7 @@
 import {
   loadBsp, parseBsp,
   AU_KM,
-  dateToJd, jdToDate, jdUtcToTdb,
+  dateToJd, jdToDate, jdUtcToTdb, jdTtToUtc,
   astroYearToHistorical, historicalYearToAstro,
   icrsToEcliptic,
   icrsToJ2000Ecliptic,
@@ -739,14 +739,16 @@ function attachGeocodeHandler(prefix) {
 // ── ユーティリティ ─────────────────────────────────────────────────
 
 /** JST の datetime-local 文字列 → TDB JD */
-function jstInputToJdTdb(datetimeLocal) {
+function jstInputToJdUtc(datetimeLocal) {
   const [datePart, timePart] = datetimeLocal.split('T');
   const [y, m, d] = datePart.split('-').map(Number);
   const [hh, mm] = (timePart || '00:00').split(':').map(Number);
-  // JST = UTC+9 → UTC
-  const utcHour = hh - 9;
-  const jdUtc = dateToJd(y, m, d + utcHour / 24 + mm / 1440);
-  return jdUtcToTdb(jdUtc);
+  const utcHour = hh - 9;  // JST = UTC+9 → UTC
+  return dateToJd(y, m, d + utcHour / 24 + mm / 1440);
+}
+
+function jstInputToJdTdb(datetimeLocal) {
+  return jdUtcToTdb(jstInputToJdUtc(datetimeLocal));
 }
 
 
@@ -1886,7 +1888,8 @@ document.getElementById('form-natal').addEventListener('submit', e => {
   e.preventDefault();
   if (!requireBsp('result-natal')) return;
 
-  const jdTdb   = jstInputToJdTdb(document.getElementById('natal-datetime').value);
+  const jdUtc   = jstInputToJdUtc(document.getElementById('natal-datetime').value);
+  const jdTdb   = jdUtcToTdb(jdUtc);
   const lat     = parseFloat(document.getElementById('natal-lat').value);
   const lon     = parseFloat(document.getElementById('natal-lon').value);
   const hSystem = document.getElementById('natal-house').value;
@@ -1897,11 +1900,11 @@ document.getElementById('form-natal').addEventListener('submit', e => {
     zodiac === 'sidereal-fagan'   ? ayanamsha(jdTdb, AYANAMSHA.FAGAN_BRADLEY) :
     0;
 
-  // ハウス計算
+  // ハウス計算（恒星時は UT1 基準のため jdUtc を渡す）
   let cusps, angles;
   try {
     const hFn = HOUSE_FN_MAP[hSystem] ?? housesPlacidus;
-    ({ cusps, angles } = hFn(jdTdb, lat, lon));
+    ({ cusps, angles } = hFn(jdUtc, lat, lon));
   } catch (err) {
     showResult('result-natal', `ハウス計算エラー: ${err.message}`, true);
     return;
@@ -2105,11 +2108,12 @@ document.getElementById('form-modern-transit').addEventListener('submit', e => {
     midJdTdb = (lo + hi) / 2;
   }
 
-  // ハウス計算
+  // ハウス計算（恒星時は UT1 基準のため jdUtc に変換して渡す）
+  const midJdUtc = jdTtToUtc(midJdTdb);
   let cusps, angles;
   try {
     const hFn = HOUSE_FN_MAP[hSystem] ?? housesPlacidus;
-    ({ cusps, angles } = hFn(midJdTdb, lat, lon));
+    ({ cusps, angles } = hFn(midJdUtc, lat, lon));
   } catch (err) {
     showResult('result-modern-transit', `ハウス計算エラー: ${err.message}`, true);
     return;
@@ -2417,18 +2421,14 @@ document.getElementById('form-medieval-chart').addEventListener('submit', e => {
   const lat   = parseFloat(document.getElementById('medieval-lat').value);
   const lon   = parseFloat(document.getElementById('medieval-lon').value);
 
-  const jdTdb = jstInputToJdTdb(dtVal);
-  // トポセントリック補正用に UTC JD も保持
-  const [datePart, timePart] = dtVal.split('T');
-  const [_y, _m, _d] = datePart.split('-').map(Number);
-  const [_hh, _mm] = (timePart || '00:00').split(':').map(Number);
-  const jdUtc   = dateToJd(_y, _m, _d + (_hh - 9) / 24 + _mm / 1440);
+  const jdUtc   = jstInputToJdUtc(dtVal);
+  const jdTdb   = jdUtcToTdb(jdUtc);
   const observer = { lat, lon, elev: 0 };
 
-  // カンパヌス式固定
+  // カンパヌス式固定（恒星時は UT1 基準のため jdUtc を渡す）
   let cusps, angles;
   try {
-    ({ cusps, angles } = housesCampanus(jdTdb, lat, lon));
+    ({ cusps, angles } = housesCampanus(jdUtc, lat, lon));
   } catch (err) {
     showResult('result-medieval-chart', `ハウス計算エラー: ${err.message}`, true);
     return;
