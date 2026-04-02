@@ -499,7 +499,44 @@ function showWelcome() {
   document.getElementById('tab-welcome')?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+  resetBreadcrumb();
 }
+
+// ── パンくずリスト（スタンドアロンPWAモード用）────────────────────
+(function initStandaloneMode() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  if (isStandalone) document.body.classList.add('is-standalone');
+})();
+
+const BC_CATEGORY_LABELS = {
+  'astro':       '📊 天文計算',
+  'observation': '🔭 天体観測',
+  'astrology':   '🔮 占星術計算',
+  'ephemeris':   '📋 基準物理天体暦',
+  'cal-conv':    '📅 暦変換計算',
+  'ai-sim':      '🤝 AI相談シミュレーター',
+  'settings':    '⚙️ 設定',
+};
+
+function updateBreadcrumb(tabId, menuText) {
+  const bc     = document.getElementById('breadcrumb');
+  const catEl  = document.getElementById('bc-category');
+  const menuEl = document.getElementById('bc-menu');
+  const sep2   = document.querySelector('#breadcrumb .bc-sep2');
+  if (!bc || !catEl || !menuEl) return;
+  catEl.textContent  = BC_CATEGORY_LABELS[tabId] ?? tabId;
+  menuEl.textContent = menuText ?? '';
+  if (sep2) sep2.style.visibility = menuText ? 'visible' : 'hidden';
+  bc.classList.add('bc-visible');
+}
+
+function resetBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  if (bc) bc.classList.remove('bc-visible');
+}
+
+document.getElementById('breadcrumb-home')?.addEventListener('click', showWelcome);
 
 // ── ウェルカム：ロゴクリック ──────────────────────────────────────
 document.querySelector('header h1')?.addEventListener('click', showWelcome);
@@ -530,6 +567,9 @@ document.querySelectorAll('.feature-card:not(.is-coming)').forEach(card => {
     }
 
     if (subId === 'settings-changelog') loadChangelog();
+
+    const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"][data-sub="${subId}"]`);
+    updateBreadcrumb(tabId, navItem?.textContent.trim() ?? '');
   });
 });
 
@@ -577,6 +617,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
     // 更新履歴は遅延読み込み
     if (subId === 'settings-changelog') loadChangelog();
+
+    updateBreadcrumb(tabId, item.textContent.trim());
   });
 });
 

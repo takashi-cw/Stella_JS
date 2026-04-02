@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#7c6af7">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=20260401">
+  <link rel="stylesheet" href="style.css?v=20260402">
 </head>
 <body>
 
@@ -22,6 +22,14 @@
     </div>
     <p class="subtitle">Pure astronomical/astrological engine — JPL DE Ephemeris direct reader —</p>
     <div id="bsp-status" class="status-badge status-loading">BSP: 読み込み中...</div>
+    <!-- スタンドアロン(PWA)モード時のみ表示するパンくずリスト -->
+    <nav id="breadcrumb" aria-label="パンくずナビゲーション">
+      <button id="breadcrumb-home" aria-label="トップへ戻る">🏠</button>
+      <span class="bc-sep" aria-hidden="true">›</span>
+      <span id="bc-category"></span>
+      <span class="bc-sep bc-sep2" aria-hidden="true">›</span>
+      <span id="bc-menu"></span>
+    </nav>
   </header>
 
   <div id="layout">
@@ -177,7 +185,7 @@
       <div class="welcome-footer">
         <span>🌍 JPL DE440s (NASA)</span>
         <span>📄 MIT License</span>
-        <span>v0.1.1</span>
+        <span>v0.1.2</span>
         <span style="margin-left:auto">🍎 ロゴをクリックするとこの画面に戻ります</span>
       </div>
     </div>
@@ -1333,6 +1341,6 @@
 
 </div><!-- /#app -->
 
-<script type="module" src="src/app.js?v=20260401"></script>
+<script type="module" src="src/app.js?v=20260402"></script>
 </body>
 </html>

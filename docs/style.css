@@ -691,3 +691,54 @@ header h1:hover { opacity: 0.75; }
     padding-left: 0;
   }
 }
+
+/* ── パンくずリスト（スタンドアロンPWAモード用）─────────────────── */
+#breadcrumb {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  padding-top: 6px;
+  overflow: hidden;
+}
+
+body.is-standalone #breadcrumb.bc-visible {
+  display: flex;
+}
+
+#breadcrumb-home {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 2px;
+  color: var(--accent);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+#breadcrumb-home:active {
+  opacity: 0.6;
+}
+
+.bc-sep {
+  opacity: 0.35;
+  flex-shrink: 0;
+}
+
+#bc-category {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 2;
+}
+
+#bc-menu {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+}
