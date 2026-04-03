@@ -1854,7 +1854,7 @@ document.getElementById('form-planet-pos').addEventListener('submit', e => {
       const distAu = dist / AU_KM;
       rows += `<tr>
         <td>${name}</td>
-        <td>${lonToSign(lon)}</td>
+        <td>${lonToIauConstellation(lon)}</td>
         <td>${trunc3(lon)}°</td>
         <td>${trunc3(lat)}°</td>
         <td>${trunc3(distAu)}</td>
@@ -1868,6 +1868,9 @@ document.getElementById('form-planet-pos').addEventListener('submit', e => {
     ? '黄経（J2000.0）'
     : '黄経（IAU of-date）';
   showResult('result-planet-pos', `
+    <p style="font-size:11px;color:var(--text-muted);margin:0 0 6px">
+      星座は IAU 境界（13星座・蛇遣座含む）による。J2000.0 近似値。
+    </p>
     <table class="result-table">
       <thead><tr><th>天体</th><th>IAU 星座</th><th>${coordLabel}</th><th>黄緯</th><th>地球からの距離 (AU)</th></tr></thead>
       <tbody>${rows}</tbody>
