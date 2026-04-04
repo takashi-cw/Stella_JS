@@ -1976,7 +1976,16 @@ document.getElementById('form-natal').addEventListener('submit', e => {
   }
 
   // 表示
-  const adjustedCusps = cusps.map(c => normAngle(c - ayanamshaVal));
+  // ホールサイン＋サイデリアル: tropical cusp − ayanamsha は30°の倍数にならず
+  // サイデリアルサイン境界とズレるため、サイデリアルASCのサイン境界から直接再計算する。
+  let adjustedCusps;
+  if (hSystem === 'whole' && ayanamshaVal !== 0) {
+    const sidAsc = normAngle(angles[0] - ayanamshaVal);
+    const sidAscSignStart = Math.floor(sidAsc / 30) * 30;
+    adjustedCusps = Array.from({ length: 12 }, (_, i) => normAngle(sidAscSignStart + i * 30));
+  } else {
+    adjustedCusps = cusps.map(c => normAngle(c - ayanamshaVal));
+  }
   const planetRows = planets.map(p => {
     const hNum   = getHouseNum(p.lon, adjustedCusps);
     const isRetro = p.lonspeed != null && p.lonspeed < 0;
