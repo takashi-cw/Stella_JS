@@ -306,25 +306,52 @@ export function getLunarDate(sunCalcFn, moonCalcFn, jdTdb) {
   const months   = buildLunarMonths(cycleMoons, zhongqiAll);
   const assigned = assignMonthNumbers(months);
 
-  // 入力 JD が含まれる月を特定
-  const birthEntry = assigned.find(e => jdTdb >= e.start && jdTdb < e.end);
+  // 入力 JD が含まれる月を特定（CST 暦日ベースで判定）
+  // 農暦の月境界（朔）は CST（北京時間 = UTC+8）の暦日で判定する。
+  // 朔が UTC 深夜付近に発生する場合、UTC 基準と CST 基準で暦日が1日ズレる。
+  const birthCstDay = _jdToCstDayNum(jdTdb);
+  const birthEntry = assigned.find(e =>
+    _jdToCstDayNum(e.start) <= birthCstDay && birthCstDay < _jdToCstDayNum(e.end)
+  );
   if (!birthEntry) return null;
 
-  const lunarDay = Math.floor(jdTdb - birthEntry.start) + 1;
+  // 農暦日も CST 暦日ベースで計算
+  const newMoonCstDay = _jdToCstDayNum(birthEntry.start);
+  const lunarDay = birthCstDay - newMoonCstDay + 1;
 
   return {
-    lunarMonth:  birthEntry.monthNum,
-    lunarDay:    Math.max(1, Math.min(30, lunarDay)),
-    isLeap:      birthEntry.isLeap,
-    cycleMonths: cycleMoons.length - 1,
-    dongzhiJd:   dzStart,
-    newMoonJd:   birthEntry.start,
+    lunarMonth:    birthEntry.monthNum,
+    lunarDay:      Math.max(1, Math.min(30, lunarDay)),
+    isLeap:        birthEntry.isLeap,
+    cycleMonths:   cycleMoons.length - 1,
+    dongzhiJd:     dzStart,
+    newMoonJd:     birthEntry.start,
+    calendarBasis: 'CST (UTC+8)',  // 農暦日付境界の基準時刻
   };
 }
 
 // =========================================================================
 // 内部ヘルパー
 // =========================================================================
+
+/** 農暦計算における CST オフセット（日単位） */
+const CST_OFFSET_JD = 8 / 24;  // 中国標準時 = UTC+8
+
+/**
+ * TDB JD → CST 暦日番号（農暦日付境界判定用 純粋関数）
+ *
+ * 農暦の月・日の境界は中国標準時（CST = UTC+8）の深夜0時で判定する。
+ * 朔が UTC 深夜付近に発生する場合、UTC 基準と CST 基準で暦日が1日ズレる。
+ *
+ * JD 規約: 整数 JD は正午(UTC 12:00)に対応するため +0.5 で深夜基準に補正し、
+ * さらに CST オフセット (+8/24) を加えて CST 深夜基準の日番号を取得する。
+ *
+ * @param {number} jd TDB Julian Day
+ * @returns {number} CST 暦日番号（整数 JDN 相当）
+ */
+function _jdToCstDayNum(jd) {
+  return Math.floor(jd + CST_OFFSET_JD + 0.5);
+}
 
 /**
  * 指定年の冬至 JD を求める（11/01〜翌年 01/20 の範囲を検索）
