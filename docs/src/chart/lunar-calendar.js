@@ -67,8 +67,11 @@ export function findNewMoonsInRange(sunCalcFn, moonCalcFn, startJD, endJD, opts 
     const nextJd = jd + STEP_DAYS_NEW_MOON;
     const next   = elongation(nextJd);
 
-    // elongation が 0 をまたぐ（正←→負）= 朔の通過
-    const crossesZero = (curr > 0 && next <= 0) || (curr < 0 && next >= 0);
+    // elongation が 0 をまたぐ（負→正）= 朔の通過
+    // ⚠️ 満月では +180° → -180° のラップアラウンドが発生し、
+    //    (curr > 0 && next <= 0) が誤って発火する。
+    //    朔は elongation が 負→正 に変わる瞬間だけを検出すれば十分。
+    const crossesZero = curr <= 0 && next > 0;
 
     if (crossesZero) {
       let lo = jd, hi = nextJd;

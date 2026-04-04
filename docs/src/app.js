@@ -3598,7 +3598,7 @@ document.getElementById('form-ziwei').addEventListener('submit', async e => {
     return;
   }
 
-  const { lunarMonth, lunarDay, isLeap, cycleMonths, dongzhiJd, newMoonJd } = lunarResult;
+  const { lunarMonth, lunarDay, isLeap, cycleMonths, dongzhiJd, newMoonJd, calendarBasis } = lunarResult;
 
   // 農暦年（冬至サイクルの年 ≈ グレゴリオ年 ± 1）を表示用に推定
   const lunarYearApprox = gy - (gm <= 1 || (gm === 2 && gd < 5) ? 1 : 0);
@@ -3708,7 +3708,7 @@ document.getElementById('form-ziwei').addEventListener('submit', async e => {
       グレゴリオ: ${gy}/${String(gm).padStart(2,'0')}/${String(gd).padStart(2,'0')} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')} JST<br>
       農暦（旧暦）: <strong>${lunarYearApprox}年 ${leapMark}${lunarMonth}月 ${lunarDay}日</strong>
         （${cycleMonths}ヶ月年・${isLeap ? '閏月' : '通常月'}）<br>
-      冬至: ${jdToJstStr(dongzhiJd)}　|　朔: ${jdToJstStr(newMoonJd)}<br>
+      冬至: ${jdToJstStr(dongzhiJd)}　|　朔: ${jdToJstStr(newMoonJd)}　|　日付境界基準: ${calendarBasis ?? 'CST (UTC+8)'}<br>
       性別: ${male ? '男（陽）' : '女（陰）'}　|　年干支: ${STEMS[yearStemI]}${BRANCHES[yearBranI]}年<br>
       命宮: ${BRANCHES[mingIdx]}　身宮: ${BRANCHES[shenIdx]}（${shenPalace?.palaceName ?? ''}）　五行局: ${wuxingName}<br>
       紫微星: ${BRANCHES[ziweiIdx]}　天府星: ${BRANCHES[tianfuIdx]}
