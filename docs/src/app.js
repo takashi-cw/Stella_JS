@@ -1517,7 +1517,7 @@ function calculateSolarAlmanac(year) {
       jst:       jdToJstStr(jd),
       termName:  term?.name     ?? null,
       nodeType:  term?.nodeType ?? null,
-      sign:      ZODIAC_SIGNS_JP[Math.floor(lon / 30) % 12],
+      sign:      lonToIauConstellation(lon),
       speed,
       dwell:     dwellStr,
       dwellHours: Math.round(dwellHours * 100) / 100,
@@ -1560,8 +1560,11 @@ document.getElementById('form-solar-cal').addEventListener('submit', async e => 
       }).join('');
 
       showResult('result-solar-cal', `
-        <p style="margin:0 0 8px;font-size:12px;color:var(--text-muted)">
+        <p style="margin:0 0 4px;font-size:12px;color:var(--text-muted)">
           太陽黄経暦 ${year} / ${coordLabel} / ${rows.length} 行
+        </p>
+        <p style="font-size:11px;color:var(--text-muted);margin:0 0 6px">
+          星座は IAU 境界（13星座・蛇遣座含む）による。J2000.0 近似値。
         </p>
         <table class="result-table">
           <thead>
@@ -1570,7 +1573,7 @@ document.getElementById('form-solar-cal').addEventListener('submit', async e => 
               <th>通過日時（JST）</th>
               <th>節気</th>
               <th>区分</th>
-              <th>星座</th>
+              <th>IAU 星座</th>
               <th>速度（°/日）</th>
               <th>滞在時間</th>
             </tr>
