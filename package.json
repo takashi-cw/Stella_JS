@@ -4,7 +4,7 @@
   "description": "Pure JavaScript astronomical/astrological engine — JPL DE direct reader for the browser",
   "main": "src/index.js",
   "scripts": {
-    "dev": "npx serve . --listen 8000",
+    "dev": "npx serve public --listen 8000",
     "test": "node --test test/**/*.js",
     "build": "echo 'TODO: bundle & minify to dist/stella-engine.min.js'"
   },
