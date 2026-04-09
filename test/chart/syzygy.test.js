@@ -12,7 +12,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { calcSyzygy } from '../../src/chart/transits.js';
+import { calcSyzygy } from '../../public/src/chart/transits.js';
 
 // 許容誤差: 計算精度 0.01 時間 → 0.01 / 24 日 = 約 4.2e-4 日
 const PREC_JD = 0.01 / 24 + 1e-6;

@@ -25,7 +25,7 @@ import {
   chebyshevEval3,
   chebyshevEval3WithVelocity,
   normalizeTime,
-} from '../../src/core/chebyshev.js';
+} from '../../public/src/core/chebyshev.js';
 
 const EPS = 1e-12;
 const close = (a, b, eps = EPS) => Math.abs(a - b) < eps;

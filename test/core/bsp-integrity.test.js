@@ -25,8 +25,8 @@ import { describe, it, before } from 'node:test';
 import { existsSync }  from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { loadBsp, parseBsp } from '../../src/core/bsp-reader.js';
-import { NAIF } from '../../src/core/constants.js';
+import { loadBsp, parseBsp } from '../../public/src/core/bsp-reader.js';
+import { NAIF } from '../../public/src/core/constants.js';
 
 // ── パス解決 ────────────────────────────────────────────────────────────────
 // このファイルは test/core/ にある。Stella-JS ルートは ../../

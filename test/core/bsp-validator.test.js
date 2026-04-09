@@ -16,7 +16,7 @@ import {
   getCoverageJd,
   assertInCoverage,
   formatCoverageMessage,
-} from '../../src/core/bsp-validator.js';
+} from '../../public/src/core/bsp-validator.js';
 
 // =========================================================================
 // テスト用モック BspFile

@@ -20,7 +20,7 @@ import {
   calculateAyanamsha,
   recommendZodiac,
   warnZodiacMismatch,
-} from '../../src/astro/precession.js';
+} from '../../public/src/astro/precession.js';
 
 const J2000_JD = 2451545.0;
 

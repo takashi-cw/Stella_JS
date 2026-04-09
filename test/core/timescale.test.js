@@ -33,7 +33,7 @@ import {
   classifyEra,
   ERA,
   TDBDatetime,
-} from '../../src/core/timescale.js';
+} from '../../public/src/core/timescale.js';
 
 const EPS6 = 1e-6;   // JD の精度（約 0.1 秒相当）
 const EPS3 = 1e-3;   // ΔT の精度（1ms 相当）
@@ -364,4 +364,4 @@ describe('TDBDatetime', () => {
 });
 
 // GREGORIAN_CUTOVER_JDN をインポートしてテストで使う
-import { GREGORIAN_CUTOVER_JDN } from '../../src/core/constants.js';
+import { GREGORIAN_CUTOVER_JDN } from '../../public/src/core/constants.js';

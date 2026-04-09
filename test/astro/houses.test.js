@@ -26,7 +26,7 @@ import {
   housesCampanus,
   calculateHouses,
   HOUSE_SYSTEMS,
-} from '../../src/astro/houses.js';
+} from '../../public/src/astro/houses.js';
 
 const J2000_JD = 2451545.0;
 const LAT = 35.6895;

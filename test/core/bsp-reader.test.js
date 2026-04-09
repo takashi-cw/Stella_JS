@@ -17,9 +17,9 @@ import { describe, it, before } from 'node:test';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { loadBsp, parseBsp, BspFile } from '../../src/core/bsp-reader.js';
-import { jdUtcToTdb } from '../../src/core/timescale.js';
-import { AU_KM, NAIF, J2000_JD } from '../../src/core/constants.js';
+import { loadBsp, parseBsp, BspFile } from '../../public/src/core/bsp-reader.js';
+import { jdUtcToTdb } from '../../public/src/core/timescale.js';
+import { AU_KM, NAIF, J2000_JD } from '../../public/src/core/constants.js';
 
 // de440s.bsp のパス（Stella-JS/public/data/ 内の開発用フル版）
 // test/core/ からの相対パス: ../.. = Stella-JS/, public/data/de440s.bsp

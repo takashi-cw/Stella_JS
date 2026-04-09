@@ -33,7 +33,7 @@ import {
   applyAberration,
   observerGCRS,
   applyLightDeflection,
-} from '../../src/astro/coordinates.js';
+} from '../../public/src/astro/coordinates.js';
 
 const J2000_JD = 2451545.0;
 const EPS6 = 1e-6;   // サブ秒角精度

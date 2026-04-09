@@ -27,7 +27,7 @@ import {
   analyzeAspect,
   getAllAspects,
   getAspectStats,
-} from '../../src/chart/aspects.js';
+} from '../../public/src/chart/aspects.js';
 
 const EPS = 1e-9;
 const close = (a, b, e = 1e-6) => Math.abs(a - b) < e;

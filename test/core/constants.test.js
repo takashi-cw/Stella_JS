@@ -22,7 +22,7 @@ import {
   NAIF,
   PLANET_NAIF,
   DELTA_T_TABLE,
-} from '../../src/core/constants.js';
+} from '../../public/src/core/constants.js';
 
 describe('constants.js — 基本定数', () => {
   it('J2000_JD は 2451545.0 である', () => {

@@ -21,7 +21,7 @@ import {
   detectStationPoint,
   calculateOptimalSampleCount,
   circularMeanLongitude,
-} from '../../src/chart/transits.js';
+} from '../../public/src/chart/transits.js';
 
 const close = (a, b, e = 1e-6) => Math.abs(a - b) < e;
 

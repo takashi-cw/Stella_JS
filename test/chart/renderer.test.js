@@ -18,7 +18,7 @@ import {
   buildChartData,
   renderSVG,
   renderHoroscopeSVG,
-} from '../../src/chart/renderer.js';
+} from '../../public/src/chart/renderer.js';
 
 const close = (a, b, e = 0.01) => Math.abs(a - b) < e;
 
