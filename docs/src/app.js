@@ -316,6 +316,7 @@ function buildTxtContent(rows, meta) {
   lines.push(`# 天体暦: ${meta.ephemeris}`);
   lines.push(`# 観測中心: ${meta.center}`);
   lines.push(`# 座標系: ${meta.coordLabel}`);
+  lines.push(`# 光行差補正: ${meta.aberration}`);
   lines.push(`# 天体: ${meta.planets}`);
   lines.push(`# ステップ: ${meta.step}`);
   lines.push(`# 期間: ${meta.period}`);
@@ -4735,12 +4736,13 @@ document.getElementById('form-phys-planet').addEventListener('submit', async e =
     ? `全惑星（${selectedPlanets.map(p => p.name).join('・')}）`
     : selectedPlanets[0].name;
   const txtMeta = {
-    ephemeris:  `JPL DE天体再定義暦『${centerName}基準物理天体暦』`,
-    center:     centerLabel,
-    coordLabel: `${coordLabel} 黄道`,
-    planets:    planetsLabel,
-    step:       stepLabel,
-    period:     `${startVal.replace('T', ' ')} 〜 ${endVal.replace('T', ' ')} JST`,
+    ephemeris:   `JPL DE天体再定義暦『${centerName}基準物理天体暦』`,
+    center:      centerLabel,
+    coordLabel:  `${coordLabel} 黄道`,
+    aberration:  'なし（幾何学的位置・光行時間補正のみ）※年周光行差未補正のため視位置と最大約20"差あり',
+    planets:     planetsLabel,
+    step:        stepLabel,
+    period:      `${startVal.replace('T', ' ')} 〜 ${endVal.replace('T', ' ')} JST`,
   };
   const txtContent = buildTxtContent(rows, txtMeta);
 

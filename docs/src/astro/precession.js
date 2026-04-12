@@ -27,12 +27,24 @@ import { J2000_JD, JULIAN_CENTURY } from '../core/constants.js';
 /** 一般歳差速度（度/年）= 50.2564 arcsec/year */
 const PRECESSION_RATE = 50.2564 / 3600.0;
 
-/** Lahiri アヤナムシャ（J2000.0 エポック値、度） */
+/**
+ * Lahiri アヤナムシャ（J2000.0 エポック値、度）
+ * 出典: インド暦改革委員会（Calendar Reform Committee）報告書（1955年）
+ *   - 委員会: インド政府が1952年11月に設置。議長: Meghnad Saha教授
+ *   - 幹事: Nirmal Chandra Lahiri（1906–1980）が算出・提案
+ *   - ゼロ点: 285 A.D.（恒星スピカ＝チトラーが黄経0°になる年）
+ *   - インド政府採用: 1953年。政令公布: 1956年3月21日（23°15'00"）
+ *   - J2000.0換算: スピカの黄経 ≒ 203.84° → アヤナムシャ ≒ 23.84°（≈ 23.85°）
+ * 参考: https://en.wikipedia.org/wiki/Ayan%C4%81%E1%B9%83%C5%9Ba
+ */
 const AYANAMSHA_LAHIRI_2000 = 23.85;
 
 /**
  * Fagan-Bradley アヤナムシャ J2000.0 基準値（度）
- * 出典: Cyril Fagan "Zodiacs Old and New" (1950) に基づく天文測定値
+ * 出典: Cyril Fagan "Zodiacs Old and New" (1950, Llewellyn Publications) に基づく天文測定値
+ *   - ゼロ点: スピカ（Spica）を恒星黄道の天秤座0°に固定（全時代共通）
+ *   - 基準年: 263 A.D.（アヤナムシャ = 22.9578°）
+ *   - 西洋サイデリアル占星術の標準アヤナムシャとして普及
  * ※ Swiss Ephemeris SE_SIDM_FAGAN_BRADLEY と同値だが、独立した公開天文値
  */
 const AYANAMSHA_FAGAN_BRADLEY_J2000 = 24.042044;
