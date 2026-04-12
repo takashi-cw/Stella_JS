@@ -24,8 +24,12 @@ import { J2000_JD, JULIAN_CENTURY } from '../core/constants.js';
 // 定数
 // =========================================================================
 
-/** 一般歳差速度（度/年）= 50.2564 arcsec/year */
-const PRECESSION_RATE = 50.2564 / 3600.0;
+/**
+ * 一般歳差速度（度/年）= 50.2564 arcsec/year — 現代付近の線形近似値。
+ * 精密計算は calculatePrecession()（IAU 1976 多項式モデル）を使うこと。
+ * この定数は後方互換・目安表示・テスト用として export する。
+ */
+export const PRECESSION_RATE = 50.2564 / 3600.0;
 
 /**
  * Lahiri アヤナムシャ（J2000.0 エポック値、度）
@@ -89,14 +93,45 @@ export function obliquity(jd) {
 // =========================================================================
 
 /**
- * 歳差運動による春分点の移動量を計算する（純粋関数）
+ * IAU 1976 一般歳差（黄道経度）の累積量を秒角で返す（純粋関数）。
  *
- * @param {number} yearFrom 基準年
+ * 参考文献:
+ *   Lieske, J.H., Lederle, T., Fricke, W., Morando, B. (1977),
+ *   "Expressions for the Precession Quantities Based upon the IAU (1976)
+ *   System of Astronomical Constants", A&A 58, 1-16.
+ *
+ * 係数（秒角/世紀^n）:
+ *   p_A = 5029.0966" × T  +  1.0939" × T²  −  0.0028" × T³
+ *
+ * 線形近似との誤差目安:
+ *   ±100年スパン : < 0.001°（無視可能）
+ *   ±1000年スパン:  ≈ 0.01°
+ *   ±2000年スパン:  ≈ 0.11°  （6.6分角、無視不可）
+ *   ±4000年スパン:  ≈ 0.50°  （30分角、有意）
+ *
+ * @param {number} T J2000.0 からのユリウス世紀数 = (year − 2000) / 100
+ * @returns {number} J2000.0 からの累積歳差量（秒角）
+ */
+export function _lieskePrecessionArcsec(T) {
+  return 5029.0966 * T + 1.0939 * T ** 2 - 0.0028 * T ** 3;
+}
+
+/**
+ * 歳差運動による春分点の移動量を計算する（IAU 1976 三次多項式モデル、純粋関数）。
+ *
+ * 旧実装は一定レート（50.2564"/年）の線形近似であったが、
+ * 古代日付（BC 1000年以前）で 0.1〜0.5° の誤差が累積するため
+ * IAU 1976 三次多項式（Lieske et al. 1977）に置き換えた。
+ * 公開 API（引数・戻り値）は変更なし。
+ *
+ * @param {number} yearFrom 基準年（デフォルト用途は 2000 = J2000.0 エポック）
  * @param {number} yearTo   計算対象年
- * @returns {number} 春分点の移動量（度、西向き正）
+ * @returns {number} yearFrom から yearTo にかけての春分点移動量（度、西向き正）
  */
 export function calculatePrecession(yearFrom, yearTo) {
-  return (yearTo - yearFrom) * PRECESSION_RATE;
+  const Tfrom = (yearFrom - 2000.0) / 100.0;
+  const Tto   = (yearTo   - 2000.0) / 100.0;
+  return (_lieskePrecessionArcsec(Tto) - _lieskePrecessionArcsec(Tfrom)) / 3600.0;
 }
 
 // =========================================================================

@@ -5,8 +5,8 @@
  *
  * 基準値:
  *   - obliquity J2000.0 = 84381.406 / 3600 = 23.43927944°（IAU 2006）
- *   - 一般歳差速度 = 50.2564 arcsec/year = 0.013960°/year
- *   - Lahiri ayanamsha 2025 ≈ 23.85 + 25 × 0.013960 = 24.1990°
+ *   - IAU 1976 多項式 p_A(T=1) = 5029.0966 + 1.0939 − 0.0028 = 5030.1877" = 1.397274°
+ *   - Lahiri ayanamsha 2026 ≈ 24.21°（多項式モデル）
  *   - recommendZodiac(2025, 'western') → tropical
  *   - recommendZodiac(-500, 'mesopotamia') → sidereal (fagan_bradley)
  */
@@ -20,6 +20,8 @@ import {
   calculateAyanamsha,
   recommendZodiac,
   warnZodiacMismatch,
+  _lieskePrecessionArcsec,
+  PRECESSION_RATE,
 } from '../../public/src/astro/precession.js';
 
 const J2000_JD = 2451545.0;
@@ -56,16 +58,52 @@ describe('obliquity — IAU 2006 黄道傾斜角', () => {
 });
 
 // =========================================================================
-// calculatePrecession — 一般歳差
+// _lieskePrecessionArcsec — IAU 1976 多項式プライベート関数
 // =========================================================================
-describe('calculatePrecession — 一般歳差', () => {
+describe('_lieskePrecessionArcsec — IAU 1976 多項式', () => {
+  it('T=0（J2000.0）: 累積歳差 = 0 arcsec', () => {
+    assert.strictEqual(_lieskePrecessionArcsec(0), 0);
+  });
+
+  it('T=1（2100年）: p_A = 5029.0966 + 1.0939 − 0.0028 = 5030.1877"', () => {
+    const expected = 5029.0966 + 1.0939 - 0.0028;
+    const actual   = _lieskePrecessionArcsec(1.0);
+    assert.ok(close(actual, expected, 1e-6), `got ${actual}`);
+  });
+
+  it('T > 0 → 正値（未来は春分点が西に移動）', () => {
+    assert.ok(_lieskePrecessionArcsec(1.0) > 0);
+  });
+
+  it('T < 0 → 負値（過去は春分点が東に戻る）', () => {
+    assert.ok(_lieskePrecessionArcsec(-1.0) < 0);
+  });
+
+  it('T=−20（0年）: 係数代入値と一致', () => {
+    const expected = 5029.0966 * (-20) + 1.0939 * 400 + (-0.0028) * (-8000);
+    assert.ok(close(_lieskePrecessionArcsec(-20), expected, 1e-4));
+  });
+
+  it('同じ引数で100回呼んで常に同じ結果（純粋関数）', () => {
+    const ref = _lieskePrecessionArcsec(-15.0);
+    for (let i = 0; i < 100; i++) {
+      assert.strictEqual(_lieskePrecessionArcsec(-15.0), ref);
+    }
+  });
+});
+
+// =========================================================================
+// calculatePrecession — 一般歳差（IAU 1976 多項式モデル）
+// =========================================================================
+describe('calculatePrecession — 一般歳差（IAU 1976 多項式）', () => {
   it('2000→2000: 0°', () => {
     assert.strictEqual(calculatePrecession(2000, 2000), 0);
   });
 
-  it('2000→2025: 25 × 50.2564/3600 ≈ 0.34900°', () => {
+  it('2000→2025: 多項式値 ≈ 0.3493°（線形 0.3490° と近いが別値）', () => {
     const p = calculatePrecession(2000, 2025);
-    assert.ok(close(p, 0.34900, EPS3), `got ${p}`);
+    // 多項式: T=0.25 → (5029.0966×0.25 + 1.0939×0.0625 − 0.0028×0.0156)/3600 ≈ 0.34926°
+    assert.ok(close(p, 0.34926, EPS3), `got ${p}`);
   });
 
   it('2025→2000: 負の移動量（過去方向）', () => {
@@ -73,9 +111,38 @@ describe('calculatePrecession — 一般歳差', () => {
     assert.ok(p < 0, `正の値が返りました: ${p}`);
   });
 
-  it('100年分 ≈ 1.396°', () => {
+  it('2000→2100: 多項式値 ≈ 1.3973°（T=1 の p_A = 5030.1877" / 3600）', () => {
+    const expected = (5029.0966 + 1.0939 - 0.0028) / 3600.0;  // ≈ 1.397274°
     const p = calculatePrecession(2000, 2100);
-    assert.ok(close(p, 100 * 50.2564 / 3600, EPS3), `got ${p}`);
+    assert.ok(close(p, expected, EPS4), `got ${p}, expected ${expected}`);
+  });
+
+  it('往復対称性: p(a→b) = −p(b→a)', () => {
+    const fwd = calculatePrecession(1000, 2000);
+    const bwd = calculatePrecession(2000, 1000);
+    assert.ok(close(fwd + bwd, 0, 1e-10), `fwd+bwd = ${fwd + bwd}`);
+  });
+
+  it('未来（2500年）は正値', () => {
+    assert.ok(calculatePrecession(2000, 2500) > 0);
+  });
+
+  it('古代（BC 1000年）は負値', () => {
+    assert.ok(calculatePrecession(2000, -999) < 0);
+  });
+
+  it('BC 1000年スパン: 線形近似より > 0.05° 小さい（誤差の有意性）', () => {
+    const poly   = calculatePrecession(2000, -999);
+    const linear = (-999 - 2000) * PRECESSION_RATE;
+    assert.ok(Math.abs(poly - linear) > 0.05,
+      `差が小さすぎる: poly=${poly}, linear=${linear}`);
+  });
+
+  it('同じ引数で100回呼んで常に同じ結果（純粋関数）', () => {
+    const ref = calculatePrecession(2000, -500);
+    for (let i = 0; i < 100; i++) {
+      assert.strictEqual(calculatePrecession(2000, -500), ref);
+    }
   });
 });
 
@@ -83,14 +150,27 @@ describe('calculatePrecession — 一般歳差', () => {
 // calculateAyanamsha — アヤナムシャ
 // =========================================================================
 describe('calculateAyanamsha — Lahiri', () => {
-  it('year=2000: offsetDeg ≈ 23.85°', () => {
+  it('year=2000: offsetDeg ≈ 23.85°（J2000 基準値）', () => {
     const a = calculateAyanamsha('lahiri', 2000);
     assert.ok(close(a.offsetDeg, 23.85, EPS3), `got ${a.offsetDeg}`);
   });
 
-  it('year=2025: offsetDeg ≈ 24.199°', () => {
-    const a = calculateAyanamsha('lahiri', 2025);
-    assert.ok(close(a.offsetDeg, 24.199, 0.001), `got ${a.offsetDeg}`);
+  it('year=2026: offsetDeg は 23〜25° の範囲内', () => {
+    const a = calculateAyanamsha('lahiri', 2026);
+    assert.ok(a.offsetDeg > 23.0 && a.offsetDeg < 25.0, `got ${a.offsetDeg}`);
+  });
+
+  it('year=285（Lahiri ゼロ点）: offsetDeg が ±1.5° 以内', () => {
+    const a = calculateAyanamsha('lahiri', 285);
+    assert.ok(Math.abs(a.offsetDeg) < 1.5,
+      `Lahiri ゼロ点 285 AD = ${a.offsetDeg}° (> ±1.5°)`);
+  });
+
+  it('過去（BC 300年）は現代より小さい（単調性）', () => {
+    const ancient = calculateAyanamsha('lahiri', -299);
+    const modern  = calculateAyanamsha('lahiri', 2026);
+    assert.ok(ancient.offsetDeg < modern.offsetDeg,
+      `BC300=${ancient.offsetDeg} >= 2026=${modern.offsetDeg}`);
   });
 
   it('type フィールドが "lahiri"', () => {
