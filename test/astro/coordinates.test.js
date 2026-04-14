@@ -469,3 +469,71 @@ describe('applyLightDeflection — 光偏差補正', () => {
     assert.ok(close(r1.x / r2.x, 2, 0.01), `偏差比≈2: ${(r1.x/r2.x).toFixed(4)}`);
   });
 });
+
+// =========================================================================
+// aberration: false パス（astrometric 相当）の差分確認
+//
+// computeApparent は DOM 依存のため Node では直接テスト不可。
+// ここでは astrometric パスで「スキップされる」2つの補正
+//   ・applyLightDeflection（光偏差）
+//   ・applyAberration（年周光行差）
+// が実際に出力を変化させること、つまりスキップ時と適用時で
+// 結果が異なることを確認する。
+//
+// 期待値: 光行差 ≈ 20" / 光偏差 ≈ 0.001〜0.005"（90°配置）
+// → どちらも地球上の天文観測で意味のある量
+// =========================================================================
+describe('astrometric パス相当: 光偏差・光行差のスキップ差分確認', () => {
+  const AU = 149597870.7;
+  const C_KM_PER_DAY = 299792.458 * 86400;
+
+  it('applyAberration をスキップすると方向が変わる（差分 > 0）', () => {
+    // 典型的な ICRS ベクトル（天体が +X 方向）と地球公転速度（+Y 方向）
+    const px = 1e8, py = 0, pz = 0;
+    const vx = 0, vy = 29.78 * 86400, vz = 0; // km/day
+
+    const withAbr  = applyAberration(px, py, pz, vx, vy, vz);
+    // スキップ相当: 単位ベクトルのまま
+    const dist = Math.sqrt(px*px + py*py + pz*pz);
+    const nx = px / dist, ny = py / dist, nz = pz / dist;
+
+    // y 成分の差 ≈ β ≈ 9.94e-5 rad
+    const diffY = Math.abs(withAbr.y - ny);
+    assert.ok(diffY > 1e-5, `光行差による y 差分=${diffY.toExponential(3)} > 1e-5`);
+
+    // 度に換算すると ≈ 20" ≈ 0.0057°
+    const diffDeg = diffY * (180 / Math.PI);
+    assert.ok(diffDeg > 0.003 && diffDeg < 0.01,
+      `光行差 ≈ ${(diffDeg * 3600).toFixed(1)}" (期待 10〜30")`);
+  });
+
+  it('applyLightDeflection をスキップすると方向が変わる（差分 > 0）', () => {
+    // 天体 +Y、太陽 +X（90° 配置）
+    const px = 0, py = 1e8, pz = 0;
+    const sx = AU, sy = 0, sz = 0;
+
+    const withDefl = applyLightDeflection(px, py, pz, sx, sy, sz);
+    // スキップ相当: 単位ベクトルのまま
+    const dist = Math.sqrt(px*px + py*py + pz*pz);
+    const nx = px / dist;
+
+    // x 成分の差 ≈ 0.001〜0.005"（ラジアン）
+    const diffX = Math.abs(withDefl.x - nx);
+    assert.ok(diffX > 1e-9, `光偏差による x 差分=${diffX.toExponential(3)} > 1e-9`);
+  });
+
+  it('両補正の合算差分は of-date と astrometric の差に相当（5〜30" 程度）', () => {
+    // 光行差（≈ 20"）が支配的。atan2 で精度良く角度差を取得。
+    // apparent 単位ベクトル (ax, ay, 0)、astrometric 単位ベクトル (1, 0, 0) の差分。
+    const px = 1e8, py = 0, pz = 0;
+    const vx = 0, vy = 29.78 * 86400, vz = 0;
+    const { x: ax, y: ay } = applyAberration(px, py, pz, vx, vy, vz);
+
+    // atan2 は 1 に近い引数でも数値的に安定（acos より精度良い）
+    const angleDiff_rad = Math.abs(Math.atan2(ay, ax));
+    const angleDiff_arcsec = angleDiff_rad * (180 / Math.PI) * 3600;
+
+    assert.ok(angleDiff_arcsec > 5 && angleDiff_arcsec < 30,
+      `apparent - astrometric ≈ ${angleDiff_arcsec.toFixed(1)}" (期待 5〜30")`);
+  });
+});

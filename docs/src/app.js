@@ -83,28 +83,37 @@ const C_KM_PER_DAY = 299792.458 * 86400;
 /**
  * 天体の視位置を計算する（settings.coordSystem に従って座標系を切り替える）
  *
- * [of-date モード] Python/Skyfield の apparent() + ecliptic_frame に相当:
+ * [of-date モード / aberration: true（デフォルト）]
+ *   Python/Skyfield の apparent() + ecliptic_frame に相当:
  *   1. 幾何学的位置から光行時間 τ を推定
  *   2. 天体位置を jdTdb-τ で再評価（地球は jdTdb で固定）→ 実体位置
  *   3. トポセントリック補正（observer 指定時）: 測心ベクトルから観測者 GCRS 位置を引く
- *   4. 光偏差補正（太陽以外の天体で observer 指定時）
+ *   4. 光偏差補正（太陽以外の天体のみ）
  *   5. 速度ベクトル法光行差 → ICRS 視方向
  *   6. ICRS → of-date 黄道（Capitaine 歳差 + IAU 2000B 章動）
  *
+ * [of-date モード / aberration: false]
+ *   Python/Skyfield の observe()（astrometric）+ ecliptic_frame に相当:
+ *   ステップ 4・5 をスキップし、光行時間補正のみで of-date 黄道へ変換する。
+ *   歳差・章動は適用される。天文計算メニュー（物理位置把握）向け。
+ *
  * [j2000 モード] 光行時間補正のみ。歳差・章動・光行差なし。
  *
- * @param {number} naifId   天体の NAIF コード
- * @param {number} jdTdb    観測 JD（TDB）
- * @param {object} [opts]   オプション
- * @param {number} [opts.jdUtc]              UTC JD（observer 指定時に使用）
- * @param {object} [opts.observer]           観測地（省略時: 地心）
- * @param {number} [opts.observer.lat]       観測緯度（度、北緯正）
- * @param {number} [opts.observer.lon]       観測経度（度、東経正）
- * @param {number} [opts.observer.elev=0]   標高（km）
+ * @param {number} naifId              天体の NAIF コード
+ * @param {number} jdTdb               観測 JD（TDB）
+ * @param {object} [opts]              オプション
+ * @param {number} [opts.jdUtc]        UTC JD（observer 指定時に使用）
+ * @param {object} [opts.observer]     観測地（省略時: 地心）
+ * @param {number} [opts.observer.lat] 観測緯度（度、北緯正）
+ * @param {number} [opts.observer.lon] 観測経度（度、東経正）
+ * @param {number} [opts.observer.elev=0] 標高（km）
+ * @param {boolean} [opts.aberration=true]
+ *   true: 視位置（光偏差 + 年周光行差あり）。ホロスコープ・観測系向け。
+ *   false: 測心位置（光行時間補正のみ）。天文計算メニュー・Python/Skyfield astrometric 対応向け。
  * @returns {{ lon: number, lat: number, dist: number }}
  */
 function computeApparent(naifId, jdTdb, opts = {}) {
-  const { jdUtc = null, observer = null } = opts;
+  const { jdUtc = null, observer = null, aberration = true } = opts;
 
   // ── 0. 天体暦カバー範囲チェック ──────────────────────────────────
   //    範囲外なら RangeError を throw → 呼び出し元の try/catch が拾う
@@ -139,7 +148,13 @@ function computeApparent(naifId, jdTdb, opts = {}) {
     return icrsToJ2000Ecliptic(ax, ay, az);
   }
 
-  // ── of-date モード（デフォルト） ────────────────────────────────
+  // ── of-date モード ───────────────────────────────────────────────
+  if (!aberration) {
+    // astrometric（測心）: 光偏差・年周光行差をスキップし歳差章動のみ適用
+    // Python/Skyfield の observe() 止め（astrometric）と同等
+    return icrsToEcliptic(ax, ay, az, jdTdb);
+  }
+
   // 4. 光偏差補正（太陽以外の天体のみ）
   let bx = ax, by = ay, bz = az;
   if (naifId !== NAIF.SUN) {
@@ -396,14 +411,18 @@ function jdToJstStr(jd) {
  * detectStationPoint が要求する { lon, lonspeed } を返す関数を返す。
  * lonspeed は 1時間前進差分による近似（°/day）。
  *
- * @param {number} naifId  惑星の NAIF コード
+ * @param {number}  naifId              惑星の NAIF コード
+ * @param {object}  [opts]              オプション
+ * @param {boolean} [opts.aberration=true]
+ *   true: 視位置（光行差あり）。false: 測心位置（光行差なし）。
+ *   天文計算メニューからは false を渡すこと。
  * @returns {function(jd: number): { lon: number, lonspeed: number }}
  */
-function makeRetroCalcFn(naifId) {
+function makeRetroCalcFn(naifId, { aberration = true } = {}) {
   const DT = 1.0 / 24; // 1 hour
   return function(jd) {
-    const p0 = computeApparent(naifId, jd);
-    const p1 = computeApparent(naifId, jd + DT);
+    const p0 = computeApparent(naifId, jd,      { aberration });
+    const p1 = computeApparent(naifId, jd + DT, { aberration });
     const lonspeed = normAngularDiff(p0.lon, p1.lon) / DT; // °/day
     return { lon: p0.lon, lonspeed };
   };
@@ -1018,7 +1037,7 @@ document.getElementById('form-retro').addEventListener('submit', e => {
 
   let html = '';
   for (const info of targets) {
-    const calcFn  = makeRetroCalcFn(info.naifId);
+    const calcFn  = makeRetroCalcFn(info.naifId, { aberration: false });
     const stations = detectAllStations(calcFn, startJD, endJD);
     const periods  = groupRetrogradePeriods(stations);
     html += buildRetroTable(info, periods, coordLabel, startStr, endStr);
@@ -1116,7 +1135,7 @@ document.getElementById('form-retro-physical').addEventListener('submit', e => {
 
   let html = '';
   for (const info of targets) {
-    const calcFn  = makeRetroCalcFn(info.naifId);
+    const calcFn  = makeRetroCalcFn(info.naifId, { aberration: false });
     const stations = detectAllStations(calcFn, startJD, endJD);
     const periods  = groupRetrogradePeriods(stations);
     html += buildRetroPhysicalTable(info, periods, calcFn, coordLabel, startStr, endStr);
@@ -1184,7 +1203,7 @@ document.getElementById('form-retro-continuous').addEventListener('submit', e =>
   const info = RETRO_PLANET_INFO[parseInt(planetVal, 10)];
   if (!info) { showResult('result-retro-continuous', '対応していない天体です。', true); return; }
 
-  const calcFn   = makeRetroCalcFn(info.naifId);
+  const calcFn   = makeRetroCalcFn(info.naifId, { aberration: false });
   const stations = detectAllStations(calcFn, startJD, endJD);
   const periods  = groupRetrogradePeriods(stations);
 
@@ -1353,8 +1372,8 @@ document.getElementById('form-aspects-ts').addEventListener('submit', e => {
   const relSpd  = Math.abs(spdA - spdB) || 0.001;
   const stepDays = Math.min(20, Math.max(0.3, 4 / relSpd));
 
-  const calcFnA = jd => computeApparent(naifA, jd);
-  const calcFnB = jd => computeApparent(naifB, jd);
+  const calcFnA = jd => computeApparent(naifA, jd, { aberration: false });
+  const calcFnB = jd => computeApparent(naifB, jd, { aberration: false });
 
   // 全アスペクトを検出してまとめてソート
   const events = [];
@@ -1745,7 +1764,7 @@ document.getElementById('form-boundary').addEventListener('submit', e => {
 
   const allEvents = [];
   for (const planet of targetPlanets) {
-    const calcFn = jd => computeApparent(planet.id, jd);
+    const calcFn = jd => computeApparent(planet.id, jd, { aberration: false });
     const crossings = detectBoundaryCrossings(calcFn, boundaries, startJD, endJD, {
       stepDays,
       precisionHours: 0.01,
@@ -1854,7 +1873,7 @@ document.getElementById('form-planet-pos').addEventListener('submit', e => {
   let rows = '';
   for (const { id: naifId, name } of GEOCENTRIC_PLANETS) {
     try {
-      const { lon, lat, dist } = computeApparent(naifId, jdTdb);
+      const { lon, lat, dist } = computeApparent(naifId, jdTdb, { aberration: false });
       const distAu = dist / AU_KM;
       rows += `<tr>
         <td>${name}</td>
@@ -1870,10 +1889,10 @@ document.getElementById('form-planet-pos').addEventListener('submit', e => {
 
   const coordLabel = settings.coordSystem === 'j2000'
     ? '黄経（J2000.0）'
-    : '黄経（IAU of-date）';
+    : '黄経（IAU of-date / astrometric）';
   showResult('result-planet-pos', `
     <p style="font-size:11px;color:var(--text-muted);margin:0 0 6px">
-      星座は IAU 境界（13星座・蛇遣座含む）による。J2000.0 近似値。
+      星座は IAU 境界（13星座・蛇遣座含む）による。J2000.0 近似値。光行差補正なし（Python/Skyfield astrometric 対応）。
     </p>
     <table class="result-table">
       <thead><tr><th>天体</th><th>IAU 星座</th><th>${coordLabel}</th><th>黄緯</th><th>地球からの距離 (AU)</th></tr></thead>
