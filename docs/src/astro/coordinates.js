@@ -16,7 +16,7 @@
  *   - 光偏差補正（gravitational light deflection / 太陽重力場）
  *   - ICRS XYZ → of-date 真黄道（IAU 2006 Capitaine 3角度歳差 + IAU 2000B 章動、メイン変換関数）
  *
- * 精度: Python/Skyfield（de440s.bsp）との黄経差 < 0.01"（春分時刻: NAOJ と秒単位一致）
+ * 精度: JPL Horizons との黄経差 < 0.002"（ICRS 黄道フレームバイアス補正済み / 2000〜2100年）
  *       月トポセントリック: 地心差最大 ~57' → 補正後 < 1"（望遠鏡観測対応）
  *
  * ライセンス: MIT
@@ -491,7 +491,7 @@ export function nutationAngles(jd) {
  *   4. 真傾斜角 ε_true = ε_A + Δε で R₁(+ε_true) 回転 → 真黄道 XYZ
  *   5. XYZ → 球面座標 (lon, lat, dist)
  *
- * 精度: Python/Skyfield（de440s.bsp）との黄経差 < 0.1"（春分時刻: NAOJ と数秒一致）
+ * 精度: JPL Horizons との黄経差 < 0.002"（ICRS 黄道フレームバイアス補正済み）
  *
  * @param {number} x   ICRS X（km または AU）
  * @param {number} y   ICRS Y
@@ -510,11 +510,17 @@ export function icrsToEcliptic(x, y, z, jd) {
   const T5 = T4 * T;
   const A2R = Math.PI / (180 * 3600);  // arcsec → rad
 
-  // ── 1. IAU 2006 Capitaine 3角度歳差（Capitaine et al. 2003 Eq.37）──
-  // Skyfield compute_precession と同一係数・同一回転シーケンス
+  // ICRS 黄道フレームバイアス補正値（定数）
+  // Capitaine 3角度歳差は ψ_A(T=0)=0 を出発点とするが、FW4 モデル（JPL Horizons が使用）は
+  // ψ_bar(T=0) = −0.041775" を出発点とする。この差が黄経に +0.042" の系統誤差を生む。
+  // 値は ERFA pfw06(J2000, 0) から導出。補正後の Horizons との差: ~0.001"（補正前: ~0.042"）
+  // 出典: IERS Conventions 2010, Fukushima-Williams (2006) IAU 2006 歳差モデル
+  const PSI_BIAS = -0.041775;  // arcsec
+
+  // ── 1. IAU 2006 Capitaine 3角度歳差（Capitaine et al. 2003 Eq.37）+ ICRS バイアス補正 ──
   const eps0A = 84381.406 * A2R;  // J2000.0 平均傾斜角（定数）
   const psiA  = (5038.481507*T - 1.0790069*T2 - 0.00114045*T3
-               + 0.000132851*T4 - 0.0000000951*T5) * A2R;  // 黄経一般歳差
+               + 0.000132851*T4 - 0.0000000951*T5 + PSI_BIAS) * A2R;  // 黄経一般歳差
   const omgA  = (84381.406 - 0.025754*T + 0.0512623*T2 - 0.00772503*T3
                - 0.000000467*T4 + 0.0000003337*T5) * A2R;  // 傾斜一般歳差
   const chiA  = (10.556403*T - 2.3814292*T2 - 0.00121197*T3
