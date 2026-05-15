@@ -2,6 +2,29 @@
 
 ---
 
+## ♻️ リファクタリング — `app.js` モジュール分割完了（2026/05/15）
+
+5,028 行に膨れ上がっていた `app.js` を ES モジュールとして 7 ファイルに分割し、`app.js` 本体を約 280 行のオーケストレーターに圧縮。
+
+**新設ファイル:**
+
+| ファイル | 責務 |
+|---|---|
+| `src/download.js` | `downloadCsv` / `buildTxtContent` / `downloadTxt` |
+| `src/ui-helpers.js` | 共有UIヘルパー・時刻変換・ジオコーディング・逆行検出ユーティリティ等 |
+| `src/ui-astro-calc.js` | 天文計算メニュー群ハンドラ（逆行・アスペクト時系列・太陽黄経暦・境界角度等） |
+| `src/ui-astro.js` | 占星術計算メニュー群ハンドラ（ネイタル・トランジット・日心占星術等） |
+| `src/ui-eastern.js` | 東洋占術メニュー群ハンドラ（四柱推命・紫微斗数・月のボイドタイム） |
+| `src/ui-observation.js` | 天体観測メニュー群ハンドラ（月相・日月出没・天体風景・24節気・基準物理天体暦） |
+| `src/ui-settings.js` | 設定タブ（暦変換フォーム・CHANGELOG 遅延レンダリング） |
+
+**設計方針:**
+- 各モジュールは `export function init(deps)` を公開し、`app.js` が BSP 依存関数 (`computeApparent` / `computeHeliocentric` / `computeFromCenter` / `requireBsp`) と `settings` を依存注入
+- `bspFile` をグローバルに露出しない（疎結合）
+- ビルドツール不要（ブラウザのネイティブ ES モジュールで動作）
+
+---
+
 ## 🔧 精度改善 — 2026/04/27
 
 - **ICRS 黄道フレームバイアス補正**（`coordinates.js`） — `icrsToEcliptic` の `ψ_A` 計算に FW4 モデルの `ψ_bar(T=0) = −0.041775"` を補正定数として追加。JPL Horizons との系統的な +0.042" 差（Capitaine vs FW4 の出発点の違い）が解消
