@@ -102,8 +102,8 @@ function makeSyntheticBsp({ spkType = 2 } = {}) {
   view.setFloat64(r2 + 8,  0.0, le);
   view.setFloat64(r2 + 16, 1.0, le);   // NSUM
   const s = r2 + 24;
-  view.setFloat64(s,       -86400.0, le);  // startJd（秒 → JD に変換されて格納、ここは便宜上秒を直接）
-  view.setFloat64(s + 8,   86400.0, le);   // endJd（同上）
+  view.setFloat64(s,       -86400.0, le);  // startSec（J2000.0 の 1 日前）
+  view.setFloat64(s + 8,   86400.0, le);   // endSec（J2000.0 の 1 日後）
   view.setInt32(s + 16,  10, le);  // target = Sun
   view.setInt32(s + 20,   0, le);  // center = SSB
   view.setInt32(s + 24,   1, le);  // frame
@@ -139,13 +139,6 @@ function makeSyntheticBsp({ spkType = 2 } = {}) {
     view.setFloat64(2152, 11.0,     le);  // rsize
     view.setFloat64(2160, 1.0,      le);  // n
   }
-
-  // サマリーの startJd/endJd は実際は JD 値が格納される。
-  // ここでは _parseSummaries がそのまま使うので、_findSegment 用に JD 値に合わせる必要がある。
-  // J2000_JD = 2451545.0、セグメントは ±1 day とする。
-  const J2000 = 2451545.0;
-  view.setFloat64(s,     J2000 - 1.0, le);  // startJd
-  view.setFloat64(s + 8, J2000 + 1.0, le);  // endJd
 
   return buf;
 }
@@ -267,13 +260,13 @@ describe('bsp-reader — 実ファイル結合テスト (de440s.bsp)', { skip: !
     assert.ok(bsp.segments.length > 0, `segments.length=${bsp.segments.length}`);
   });
 
-  it('segments には target, center, startJd, endJd が含まれる', () => {
+  it('segments には target, center, startSec, endSec が含まれる', () => {
     for (const seg of bsp.segments) {
       assert.ok(typeof seg.target === 'number', 'target');
       assert.ok(typeof seg.center === 'number', 'center');
-      assert.ok(typeof seg.startJd === 'number', 'startJd');
-      assert.ok(typeof seg.endJd === 'number', 'endJd');
-      assert.ok(seg.endJd > seg.startJd, 'endJd > startJd');
+      assert.ok(typeof seg.startSec === 'number', 'startSec');
+      assert.ok(typeof seg.endSec === 'number', 'endSec');
+      assert.ok(seg.endSec > seg.startSec, 'endSec > startSec');
     }
   });
 

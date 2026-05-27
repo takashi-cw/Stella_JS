@@ -130,8 +130,8 @@ function _parseFileRecord(view) {
  *  24以降: サマリー列（各サマリー = (ND + ceil(NI/2)) * 8 バイト）
  *
  * SPK の各サマリー（ND=2, NI=6 → 5 doubles = 40 バイト）:
- *   doubles[0]: start_jd   （セグメント開始 JD）
- *   doubles[1]: end_jd     （セグメント終了 JD）
+ *   doubles[0]: start_sec  （セグメント開始時刻 J2000.0 からの秒数）
+ *   doubles[1]: end_sec    （セグメント終了時刻 J2000.0 からの秒数）
  *   int32[0]: target       （ターゲット NAIF コード）
  *   int32[1]: center       （センター NAIF コード）
  *   int32[2]: frame        （参照フレーム; 1 = J2000）
@@ -163,9 +163,9 @@ function _parseSummaries(view, nd, ni, firstSumRec, le) {
     for (let i = 0; i < nSummaries; i++) {
       const offset = recOffset + 24 + i * summaryBytes;
 
-      // ND doubles: [start_jd, end_jd]
-      const startJd = view.getFloat64(offset, le);
-      const endJd   = view.getFloat64(offset + 8, le);
+      // ND doubles: [start_sec, end_sec]（J2000.0 からの秒数）
+      const startSec = view.getFloat64(offset, le);
+      const endSec   = view.getFloat64(offset + 8, le);
 
       // NI integers packed into ceil(NI/2) doubles
       // (各 double に 2 つの int32 が little-endian でパック)
@@ -177,7 +177,7 @@ function _parseSummaries(view, nd, ni, firstSumRec, le) {
       const firstAddr = view.getInt32(intOffset + 16, le);
       const lastAddr  = view.getInt32(intOffset + 20, le);
 
-      segments.push({ startJd, endJd, target, center, frame, type, firstAddr, lastAddr });
+      segments.push({ startSec, endSec, target, center, frame, type, firstAddr, lastAddr });
     }
 
     recNum = Math.round(nextRec);
@@ -282,8 +282,8 @@ function _readCoeffs(view, offset, count, le) {
 
 /**
  * @typedef {Object} SegmentDescriptor
- * @property {number} startJd
- * @property {number} endJd
+ * @property {number} startSec  セグメント開始時刻（J2000.0 からの秒数）
+ * @property {number} endSec    セグメント終了時刻（J2000.0 からの秒数）
  * @property {number} target
  * @property {number} center
  * @property {number} frame
@@ -319,12 +319,12 @@ export class BspFile {
 
   /**
    * 利用可能なセグメント一覧（target, center の pair）を返す
-   * @returns {Array<{target: number, center: number, startJd: number, endJd: number}>}
+   * @returns {Array<{target: number, center: number, startSec: number, endSec: number}>}
    */
   get pairs() {
     return this.segments.map(s => ({
       target: s.target, center: s.center,
-      startJd: s.startJd, endJd: s.endJd,
+      startSec: s.startSec, endSec: s.endSec,
     }));
   }
 
@@ -336,9 +336,10 @@ export class BspFile {
    * @returns {SegmentDescriptor|null}
    */
   _findSegment(target, center, jdTdb) {
+    const tSec = (jdTdb - J2000_JD) * S_PER_DAY;
     for (const seg of this.segments) {
       if (seg.target === target && seg.center === center &&
-          jdTdb >= seg.startJd && jdTdb <= seg.endJd) {
+          tSec >= seg.startSec && tSec <= seg.endSec) {
         return seg;
       }
     }
@@ -441,8 +442,9 @@ export class BspFile {
     if (direct) return this.getPosition(target, SSB, jdTdb);
 
     // チェーンを探す: 何らかの中間 center を通じてターゲットに辿り着けるか
+    const tSec = (jdTdb - J2000_JD) * S_PER_DAY;
     for (const seg of this.segments) {
-      if (seg.target === target && jdTdb >= seg.startJd && jdTdb <= seg.endJd) {
+      if (seg.target === target && tSec >= seg.startSec && tSec <= seg.endSec) {
         // seg.center → target のベクトル
         const fromCenter = this.getPosition(target, seg.center, jdTdb);
         // SSB → seg.center のベクトル

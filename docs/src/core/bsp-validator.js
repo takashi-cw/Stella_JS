@@ -22,7 +22,7 @@ const NAIF_SUN  = 10;
 /**
  * BSP ファイルのカバー範囲を JD で返す
  *
- * セグメントの startJd / endJd は「J2000.0 からの秒数」で格納されているため
+ * セグメントの startSec / endSec は「J2000.0 からの秒数」で格納されているため
  * JD に変換して返す。
  *
  * @param {import('./bsp-reader.js').BspFile} bspFile
@@ -36,8 +36,8 @@ export function getCoverageJd(bspFile, naifTarget = NAIF_SUN) {
   if (segs.length === 0) {
     // フォールバック: 全セグメントから推定
     const all = bspFile.segments;
-    const minSec = Math.min(...all.map(s => s.startJd));
-    const maxSec = Math.max(...all.map(s => s.endJd));
+    const minSec = Math.min(...all.map(s => s.startSec));
+    const maxSec = Math.max(...all.map(s => s.endSec));
     return {
       startJd: J2000_JD + minSec / S_PER_DAY,
       endJd:   J2000_JD + maxSec / S_PER_DAY,
@@ -45,8 +45,8 @@ export function getCoverageJd(bspFile, naifTarget = NAIF_SUN) {
   }
 
   // 秒 → JD 変換
-  const minSec = Math.min(...segs.map(s => s.startJd));
-  const maxSec = Math.max(...segs.map(s => s.endJd));
+  const minSec = Math.min(...segs.map(s => s.startSec));
+  const maxSec = Math.max(...segs.map(s => s.endSec));
   return {
     startJd: J2000_JD + minSec / S_PER_DAY,
     endJd:   J2000_JD + maxSec / S_PER_DAY,
