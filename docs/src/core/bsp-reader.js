@@ -1,15 +1,19 @@
 /**
- * bsp-reader.js — JPL DE440s (.bsp) バイナリ読み込み
+ * bsp-reader.js — JPL .bsp バイナリ読み込み
  *
  * Layer 1: core（chebyshev.js + constants.js に依存）
  *
- * NASA NAIF DAF/SPK Type 2 フォーマットを ArrayBuffer + DataView で解析し、
- * 指定天体の ICRS XYZ 位置ベクトル（AU）を返す。
+ * NASA NAIF DAF/SPK フォーマットを ArrayBuffer + DataView で解析し、
+ * 指定天体の ICRS XYZ 位置ベクトル（km）を返す。
  *
  * Python 版では Skyfield が jplephem 経由でこの処理を行っている。
  * JS ではブラウザの fetch() でバイナリを取得し、このモジュールで直接解析する。
  *
- * 対応フォーマット: SPK Type 2（Chebyshev 多項式：位置のみ）
+ * 対応フォーマット:
+ *   - SPK Type 2（Chebyshev 多項式：位置）    ← 惑星・月・太陽
+ *   - SPK Type 3（Chebyshev 多項式：位置+速度）← 月秤動角、full DE440/DE441
+ *   ※ Type 13（Hermite 補間：小天体）は非対応（スコープ外）
+ *
  * 出典フォーマット仕様:
  *   - NAIF SPK Required Reading (NAIF N0067)
  *   - NAIF DAF Required Reading (NAIF N0067)
@@ -28,8 +32,20 @@ import { J2000_JD, AU_KM } from './constants.js';
 // =========================================================================
 
 const RECORD_SIZE = 1024;         // 1レコード = 1024 バイト
-const S_PER_DAY  = 86400.0;       // 1日 = 86400 秒（INIT/INTLEN が秒単位の場合に使用）
-const SPK_TYPE_2 = 2;             // Chebyshev 多項式（位置のみ）
+const S_PER_DAY  = 86400.0;       // 1日 = 86400 秒
+const SPK_TYPE_2 = 2;             // Chebyshev 多項式（位置）：惑星・月・太陽
+const SPK_TYPE_3 = 3;             // Chebyshev 多項式（位置+速度）：月秤動角、full DE440/441
+
+/**
+ * SPK タイプから位置計算に使う成分数を返す（Type 2: 3、Type 3: 6、非対応: null）
+ * @param {number} type
+ * @returns {number|null}
+ */
+function _spkComponents(type) {
+  if (type === SPK_TYPE_2) return 3;
+  if (type === SPK_TYPE_3) return 6;
+  return null;
+}
 
 // =========================================================================
 // ファイル読み込み（環境依存レイヤー）
@@ -171,66 +187,65 @@ function _parseSummaries(view, nd, ni, firstSumRec, le) {
 }
 
 // =========================================================================
-// Type 2 セグメントの位置計算
+// Chebyshev セグメントの位置計算（Type 2 / Type 3 共通）
 // =========================================================================
 
 /**
- * Type 2 セグメントから JD(TDB) における ICRS 位置を計算する
+ * Type 2 / Type 3 セグメントから JD(TDB) における ICRS 位置を計算する
  *
- * Type 2 セグメントデータ構造（末尾 4 doubles）:
- *   INIT:   最初のサブ区間の開始時刻（J2000.0 からの秒数、TDB）
- *   INTLEN: 各サブ区間の長さ（秒）
- *   RSIZE:  1 論理レコードの double 要素数
- *   N:      サブ区間数
+ * Type 2 と Type 3 のレコード構造は同一。成分数のみ異なる:
+ *   Type 2: [mid, radius, Xpos×n, Ypos×n, Zpos×n]               → components=3
+ *   Type 3: [mid, radius, Xpos×n, Ypos×n, Zpos×n, Xvel×n, Yvel×n, Zvel×n] → components=6
  *
- * 各論理レコード（RSIZE doubles）:
- *   MID:    サブ区間の中点（J2000.0 からの秒数）
- *   RADIUS: サブ区間の半幅（秒）
- *   Cx[0..ncoeff-1]: X 軸 Chebyshev 係数
- *   Cy[0..ncoeff-1]: Y 軸 Chebyshev 係数
- *   Cz[0..ncoeff-1]: Z 軸 Chebyshev 係数
+ * ncoeff = (RSIZE - 2) / components で自動分岐。
+ * 速度は位置多項式の微分で算出（Type 3 の格納速度係数は不使用）。
  *
  * @param {DataView} view
  * @param {SegmentDescriptor} seg
- * @param {number} jdTdb   JD（TDB基準）
- * @param {boolean} le     little-endian か
+ * @param {number} jdTdb       JD（TDB基準）
+ * @param {boolean} le         little-endian か
+ * @param {number} components  成分数（Type 2 = 3、Type 3 = 6）
  * @param {boolean} [withVelocity=false]
  * @returns {{ position: number[], velocity?: number[] }} km 単位
  */
-function _computeType2(view, seg, jdTdb, le, withVelocity = false) {
-  // セグメントデータ: 1-indexed double アドレス → バイトオフセット
+function _computeChebyshev(view, seg, jdTdb, le, components, withVelocity = false) {
   const dataStart = (seg.firstAddr - 1) * 8;
   const dataEnd   = seg.lastAddr * 8;
 
   // 末尾 4 doubles: INIT, INTLEN, RSIZE, N
   const metaOffset = dataEnd - 32;
-  const init    = view.getFloat64(metaOffset,      le);  // 秒 (past J2000 TDB)
-  const intlen  = view.getFloat64(metaOffset +  8, le);  // 秒
+  const init    = view.getFloat64(metaOffset,      le);
+  const intlen  = view.getFloat64(metaOffset +  8, le);
   const rsize   = Math.round(view.getFloat64(metaOffset + 16, le));
   const n       = Math.round(view.getFloat64(metaOffset + 24, le));
 
-  // jdTdb → J2000.0 からの秒数
   const tSeconds = (jdTdb - J2000_JD) * S_PER_DAY;
 
-  // サブ区間インデックスを求める
-  let idx = Math.floor((tSeconds - init) / intlen);
-  if (idx < 0) idx = 0;
-  if (idx >= n) idx = n - 1;
+  // セグメントのカバー範囲チェック
+  const segStart = init;
+  const segEnd   = init + n * intlen;
+  if (tSeconds < segStart || tSeconds > segEnd) {
+    const jdStart = (segStart / S_PER_DAY + J2000_JD).toFixed(4);
+    const jdEnd   = (segEnd   / S_PER_DAY + J2000_JD).toFixed(4);
+    throw new Error(
+      `JD out of coverage: JD ${jdTdb.toFixed(4)} (valid: JD ${jdStart} – ${jdEnd})`
+    );
+  }
 
-  // 論理レコードの開始バイトオフセット（1-indexed double アドレスから）
+  // サブ区間インデックス（境界の浮動小数点丸め誤差を吸収）
+  let idx = Math.floor((tSeconds - init) / intlen);
+  if (idx < 0)   idx = 0;
+  if (idx >= n)  idx = n - 1;
+
   const recOffset = dataStart + idx * rsize * 8;
 
-  // MID と RADIUS を読む（J2000.0 からの秒数）
   const mid    = view.getFloat64(recOffset,     le);
   const radius = view.getFloat64(recOffset + 8, le);
+  const x      = (tSeconds - mid) / radius;
 
-  // 正規化変数 x ∈ [-1, 1]
-  const x = (tSeconds - mid) / radius;
+  // ncoeff = (RSIZE - 2) / components（Type 2: /3、Type 3: /6）
+  const ncoeff = (rsize - 2) / components;
 
-  // Chebyshev 係数数: ncoeff = (RSIZE - 2) / 3
-  const ncoeff = (rsize - 2) / 3;
-
-  // 各軸の係数を読む（8バイト × ncoeff）
   const coeffX = _readCoeffs(view, recOffset + 16,                  ncoeff, le);
   const coeffY = _readCoeffs(view, recOffset + 16 + ncoeff * 8,     ncoeff, le);
   const coeffZ = _readCoeffs(view, recOffset + 16 + ncoeff * 8 * 2, ncoeff, le);
@@ -346,10 +361,11 @@ export class BspFile {
         `セグメントが見つかりません: target=${target}, center=${center}, jd=${jdTdb}`
       );
     }
-    if (seg.type !== SPK_TYPE_2) {
-      throw new Error(`未対応の SPK タイプ: ${seg.type} (Type 2 のみ対応)`);
+    const components = _spkComponents(seg.type);
+    if (components === null) {
+      throw new Error(`未対応の SPK タイプ: ${seg.type}`);
     }
-    return _computeType2(this._view, seg, jdTdb, this._le, false).position;
+    return _computeChebyshev(this._view, seg, jdTdb, this._le, components, false).position;
   }
 
   /**
@@ -367,10 +383,11 @@ export class BspFile {
         `セグメントが見つかりません: target=${target}, center=${center}, jd=${jdTdb}`
       );
     }
-    if (seg.type !== SPK_TYPE_2) {
+    const components = _spkComponents(seg.type);
+    if (components === null) {
       throw new Error(`未対応の SPK タイプ: ${seg.type}`);
     }
-    return _computeType2(this._view, seg, jdTdb, this._le, true);
+    return _computeChebyshev(this._view, seg, jdTdb, this._le, components, true);
   }
 
   /**
