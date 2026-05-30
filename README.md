@@ -33,7 +33,15 @@ JPL DE440s をブラウザ内で直接読み込む、高精度天文・占星術
 ## アーキテクチャ
 
 ```
-JPL DE440s (.bsp)  ← NASA（Public Domain）
+【データ準備（開発者用・ビルド時のみ）】
+JPL DE440 / DE440s (.bsp)  ← NASA（Public Domain）
+  ↓
+scripts/bsp_extractor.py   ← Python + spiceypy（CSPICE）で期間を切り出し
+  ↓
+public/data/*.bsp          ← 軽量化済み .bsp（リポジトリに同梱）
+
+【JS ランタイム（ユーザー環境・C ライブラリ不要）】
+public/data/*.bsp
   ↓
 src/core/          ← DAF 解析 + Chebyshev 評価（jplephem 相当）
   ↓
@@ -45,6 +53,9 @@ src/app.js         ← UI ロジック統合
   ↓
 public/            ← GitHub Pages で静的配信
 ```
+
+> **注記**: JS ランタイムは外部 C ライブラリに依存しません。  
+> ただし、配信用 .bsp ファイルを生成する開発者向けビルドスクリプト（`scripts/bsp_extractor.py`）は Python と spiceypy（CSPICE ラッパー）を必要とします。エンドユーザーが CSPICE を導入する必要はありません。
 
 ---
 
@@ -81,7 +92,7 @@ stella-js/
 │   ├── astro/                  3 ファイル
 │   └── chart/                  4 ファイル
 ├── scripts/
-│   └── bsp_extractor.py        BSP 分割スクリプト（開発者用・Python）
+│   └── bsp_extractor.py        BSP 分割スクリプト（開発者用・Python + spiceypy）
 ├── docs/                       設計ドキュメント
 ├── package.json
 ├── .gitignore
