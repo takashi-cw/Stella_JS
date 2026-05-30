@@ -18,7 +18,6 @@
  * ライセンス: MIT
  * アルゴリズム出典:
  *   - Jean Meeus "Astronomical Algorithms" 2nd ed. Ch.24
- *   - spacefield/ephem/house_systems.py（設計参考）
  */
 
 'use strict';
