@@ -93,6 +93,7 @@ export {
   housesWholeSigns,
   housesRegiomontanus,
   housesCampanus,
+  effectiveHouseSystem,
   calculateHouses,
 } from './astro/houses.js';
 

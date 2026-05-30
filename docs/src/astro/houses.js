@@ -58,10 +58,12 @@ export const HOUSE_SYSTEMS = Object.freeze({
  * @param {number} [opts.tol=1e-9]   収束判定閾値（|Δx| < tol）
  * @param {number} [opts.maxIter=50] 最大反復回数
  * @param {number} [opts.h=1e-7]     数値微分ステップ幅
+ * @param {number|null} [opts.maxStep=null] 1回あたりの最大ステップ幅（null で無制限）。
+ *   高緯度など dsha が急変する領域で atan2 の分岐切断をまたいだ誤収束を防ぐ。
  * @returns {number} 収束した解
  * @throws {Error} 収束しなかった場合、または導関数がゼロの場合
  */
-export function solveNewton(func, x0, { tol = 1e-9, maxIter = 50, h = 1e-7 } = {}) {
+export function solveNewton(func, x0, { tol = 1e-9, maxIter = 50, h = 1e-7, maxStep = null } = {}) {
   let x = x0;
   for (let i = 0; i < maxIter; i++) {
     const fx  = func(x);
@@ -69,7 +71,8 @@ export function solveNewton(func, x0, { tol = 1e-9, maxIter = 50, h = 1e-7 } = {
     if (Math.abs(dfx) < 1e-15) {
       throw new Error(`solveNewton: 導関数がゼロに近い (iter=${i}, x=${x.toFixed(6)})`);
     }
-    const dx = -fx / dfx;
+    let dx = -fx / dfx;
+    if (maxStep !== null) dx = Math.max(-maxStep, Math.min(maxStep, dx));
     x += dx;
     if (Math.abs(dx) < tol) return x;
   }
@@ -125,7 +128,7 @@ export function housesPlacidus(jd, lat, lon) {
   }
 
   function solveUpper(fraction) {
-    return solveNewton(theta => ramc + fraction * dsha(theta) - theta, ramc);
+    return solveNewton(theta => ramc + fraction * dsha(theta) - theta, ramc, { maxStep: 60 });
   }
 
   const tH11 = solveUpper(+1 / 3);
@@ -363,23 +366,63 @@ export function housesCampanus(jd, lat, lon) {
 // ファサード
 // =========================================================================
 
+// =========================================================================
+// 極地フォールバック
+// =========================================================================
+
+/**
+ * フォールバック後の実効ハウスシステムと理由を返す（純粋関数）
+ *
+ * |lat| > 90° − obliquity(jd) の緯度では一部の黄経で DSHA が未定義となり、
+ * Placidus / Koch は天文学的に無意味な値を返す。Equal へ切り替える。
+ *
+ * @param {number} jd    ユリウス日
+ * @param {number} lat   地理緯度（度）
+ * @param {string} hsys  HOUSE_SYSTEMS 定数
+ * @returns {{ hsys: string, fallback: string|null }}
+ *   fallback は変更なし=null、極地='polar_latitude'
+ */
+export function effectiveHouseSystem(jd, lat, hsys) {
+  const _polarSensitive = new Set([
+    HOUSE_SYSTEMS.PLACIDUS,
+    HOUSE_SYSTEMS.KOCH,
+  ]);
+  if (!_polarSensitive.has(hsys)) return { hsys, fallback: null };
+
+  const eps = obliquity(jd);
+  if (Math.abs(lat) > 90 - eps) {
+    return { hsys: HOUSE_SYSTEMS.EQUAL, fallback: 'polar_latitude' };
+  }
+  return { hsys, fallback: null };
+}
+
+// =========================================================================
+// ファサード
+// =========================================================================
+
 /**
  * 指定されたハウスシステムでカスプを計算する（純粋関数）
+ *
+ * 極地緯度（|lat| > 90° − obliquity）では Placidus/Koch を Equal へ
+ * 自動フォールバックし、戻り値の `fallback` フィールドに理由を返す。
  *
  * @param {number} jd         ユリウス日
  * @param {number} lat        地理緯度（度）
  * @param {number} lon        地理経度（度）
  * @param {string} [hsys]     HOUSE_SYSTEMS 定数（デフォルト: 'placidus'）
- * @returns {{ cusps: number[], angles: number[] }}
+ * @returns {{ cusps: number[], angles: number[], fallback: string|null }}
  */
 export function calculateHouses(jd, lat, lon, hsys = HOUSE_SYSTEMS.PLACIDUS) {
-  switch (hsys) {
-    case HOUSE_SYSTEMS.PLACIDUS:      return housesPlacidus(jd, lat, lon);
-    case HOUSE_SYSTEMS.KOCH:          return housesKoch(jd, lat, lon);
-    case HOUSE_SYSTEMS.EQUAL:         return housesEqual(jd, lat, lon);
-    case HOUSE_SYSTEMS.WHOLE_SIGN:    return housesWholeSigns(jd, lat, lon);
-    case HOUSE_SYSTEMS.REGIOMONTANUS: return housesRegiomontanus(jd, lat, lon);
-    case HOUSE_SYSTEMS.CAMPANUS:      return housesCampanus(jd, lat, lon);
-    default:                          return housesPlacidus(jd, lat, lon);
+  const { hsys: effectiveHsys, fallback } = effectiveHouseSystem(jd, lat, hsys);
+  let result;
+  switch (effectiveHsys) {
+    case HOUSE_SYSTEMS.PLACIDUS:      result = housesPlacidus(jd, lat, lon);      break;
+    case HOUSE_SYSTEMS.KOCH:          result = housesKoch(jd, lat, lon);           break;
+    case HOUSE_SYSTEMS.EQUAL:         result = housesEqual(jd, lat, lon);          break;
+    case HOUSE_SYSTEMS.WHOLE_SIGN:    result = housesWholeSigns(jd, lat, lon);     break;
+    case HOUSE_SYSTEMS.REGIOMONTANUS: result = housesRegiomontanus(jd, lat, lon);  break;
+    case HOUSE_SYSTEMS.CAMPANUS:      result = housesCampanus(jd, lat, lon);       break;
+    default:                          result = housesPlacidus(jd, lat, lon);       break;
   }
+  return { ...result, fallback };
 }

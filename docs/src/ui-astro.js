@@ -19,8 +19,10 @@ import {
   NAIF, jdUtcToTdb, jdTtToUtc, normAngle, normAngularDiff,
   calculateAyanamsha, calcSyzygy, circularMeanLongitude, calculateOptimalSampleCount,
   getAllAspects, MAJOR_ASPECTS,
+  HOUSE_SYSTEMS,
   housesPlacidus, housesKoch, housesEqual, housesWholeSigns,
   housesRegiomontanus, housesCampanus,
+  calculateHouses,
 } from './index.js';
 
 import {
@@ -67,6 +69,16 @@ const HOUSE_FN_MAP = {
   whole:         housesWholeSigns,
   regiomontanus: housesRegiomontanus,
   campanus:      housesCampanus,
+};
+
+// UI キー → HOUSE_SYSTEMS 定数（calculateHouses に渡すためのマッピング）
+const UI_TO_HSYS = {
+  placidus:      HOUSE_SYSTEMS.PLACIDUS,
+  koch:          HOUSE_SYSTEMS.KOCH,
+  equal:         HOUSE_SYSTEMS.EQUAL,
+  whole:         HOUSE_SYSTEMS.WHOLE_SIGN,
+  regiomontanus: HOUSE_SYSTEMS.REGIOMONTANUS,
+  campanus:      HOUSE_SYSTEMS.CAMPANUS,
 };
 
 // ── 定数 ─────────────────────────────────────────────────────────────────
@@ -183,10 +195,10 @@ function _registerHandlers() {
       zodiac === 'sidereal-fagan'   ? ayanamsha(jdTdb, AYANAMSHA.FAGAN_BRADLEY) :
       0;
 
-    let cusps, angles;
+    let cusps, angles, houseFallback;
     try {
-      const hFn = HOUSE_FN_MAP[hSystem] ?? housesPlacidus;
-      ({ cusps, angles } = hFn(jdUtc, lat, lon));
+      const hsys = UI_TO_HSYS[hSystem] ?? HOUSE_SYSTEMS.PLACIDUS;
+      ({ cusps, angles, fallback: houseFallback } = calculateHouses(jdUtc, lat, lon, hsys));
     } catch (err) {
       showResult('result-natal', `ハウス計算エラー: ${err.message}`, true);
       return;
@@ -259,7 +271,13 @@ function _registerHandlers() {
 
     const zodiacLabel = zodiac === 'tropical' ? 'トロピカル' : zodiac === 'sidereal-lahiri' ? 'サイデリアル・ラーヒリー' : 'サイデリアル・フェーガン';
     const coordSuffix = _settings.coordSystem === 'j2000' ? ' / J2000.0' : ' / of-date';
+    const polarWarning = houseFallback === 'polar_latitude'
+      ? `<p style="font-size:11px;color:#c0392b;background:#fdf2f0;border:1px solid #e8b4b8;padding:6px 10px;border-radius:4px;margin:0 0 10px">
+           ⚠️ 極地フォールバック: 緯度が約66.56°を超えているため、Placidus/Koch は天文学的に無効です。ハウスシステムを Equal（均等30°）に自動切替えしました。
+         </p>`
+      : '';
     showResult('result-natal', `
+      ${polarWarning}
       <h4 style="margin:0 0 8px;font-size:13px">▼ 惑星位置（${zodiacLabel}${coordSuffix}）</h4>
       <table class="result-table">
         <thead><tr><th>天体</th><th>ハウス</th><th>星座</th><th>黄経</th><th>黄緯</th></tr></thead>
@@ -347,10 +365,10 @@ function _registerHandlers() {
     }
 
     const midJdUtc = jdTtToUtc(midJdTdb);
-    let cusps, angles;
+    let cusps, angles, transitHouseFallback;
     try {
-      const hFn = HOUSE_FN_MAP[hSystem] ?? housesPlacidus;
-      ({ cusps, angles } = hFn(midJdUtc, lat, lon));
+      const hsys = UI_TO_HSYS[hSystem] ?? HOUSE_SYSTEMS.PLACIDUS;
+      ({ cusps, angles, fallback: transitHouseFallback } = calculateHouses(midJdUtc, lat, lon, hsys));
     } catch (err) {
       showResult('result-modern-transit', `ハウス計算エラー: ${err.message}`, true);
       return;
@@ -392,7 +410,13 @@ function _registerHandlers() {
       `<tr><td>${planetNameById[a.planet1] ?? a.planet1}</td><td>${ASPECT_SYMBOL[a.type] ?? `${a.type}°`}</td><td>${planetNameById[a.planet2] ?? a.planet2}</td><td>${a.orb.toFixed(2)}°</td></tr>`
     ).join('');
 
+    const transitPolarWarning = transitHouseFallback === 'polar_latitude'
+      ? `<p style="font-size:11px;color:#c0392b;background:#fdf2f0;border:1px solid #e8b4b8;padding:6px 10px;border-radius:4px;margin:0 0 10px">
+           ⚠️ 極地フォールバック: 緯度が約66.56°を超えているため、Placidus/Koch は天文学的に無効です。ハウスシステムを Equal（均等30°）に自動切替えしました。
+         </p>`
+      : '';
     showResult('result-modern-transit', `
+      ${transitPolarWarning}
       <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px">
         <strong>手法:</strong> ${method}<br>
         <strong>入力期間:</strong> ${startVal.replace('T', ' ')} 〜 ${endVal.replace('T', ' ')} JST（${periodDays.toFixed(1)}日間）<br>

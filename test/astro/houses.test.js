@@ -24,6 +24,7 @@ import {
   housesWholeSigns,
   housesRegiomontanus,
   housesCampanus,
+  effectiveHouseSystem,
   calculateHouses,
   HOUSE_SYSTEMS,
 } from '../../public/src/astro/houses.js';
@@ -250,5 +251,90 @@ describe('calculateHouses — ファサード', () => {
     const r1 = calculateHouses(J2000_JD, LAT, LON, 'unknown_system');
     const r2 = housesPlacidus(J2000_JD, LAT, LON);
     assert.ok(close(r1.cusps[0], r2.cusps[0], 1e-6));
+  });
+
+  it('fallback フィールドが存在する（通常時は null）', () => {
+    const r = calculateHouses(J2000_JD, LAT, LON);
+    assert.ok('fallback' in r, 'fallback フィールドなし');
+    assert.strictEqual(r.fallback, null);
+  });
+});
+
+// =========================================================================
+// effectiveHouseSystem — 極地フォールバック
+// =========================================================================
+
+// 極地ケース（lat > 90° − obliquity ≈ 66.56°N）
+const POLAR_CASES = [
+  { lat: 69.7,  lon:  18.9556, label: 'トロムソ（69.7°N）'          },
+  { lat: 78.2,  lon:  15.6342, label: 'ロングイェールビーン（78.2°N）' },
+  { lat: 71.3,  lon: -156.789, label: 'バロー（71.3°N）'             },
+];
+
+// 臨界値直下（フォールバックしないことを確認）
+const NEAR_POLAR_CASES = [
+  { lat: 60.0, lon: 24.9384, label: 'ヘルシンキ（60°N）' },
+  { lat: 66.0, lon: 25.0,    label: 'lat=66°N（臨界値直下）' },
+];
+
+describe('effectiveHouseSystem — 極地フォールバック検出', () => {
+  for (const { lat, lon, label } of POLAR_CASES) {
+    it(`Placidus → Equal (polar_latitude): ${label}`, () => {
+      const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.PLACIDUS);
+      assert.strictEqual(eff, HOUSE_SYSTEMS.EQUAL, `hsys=${eff}`);
+      assert.strictEqual(fallback, 'polar_latitude');
+    });
+
+    it(`Koch → Equal (polar_latitude): ${label}`, () => {
+      const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.KOCH);
+      assert.strictEqual(eff, HOUSE_SYSTEMS.EQUAL, `hsys=${eff}`);
+      assert.strictEqual(fallback, 'polar_latitude');
+    });
+
+    it(`Equal は変更なし: ${label}`, () => {
+      const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.EQUAL);
+      assert.strictEqual(eff, HOUSE_SYSTEMS.EQUAL);
+      assert.strictEqual(fallback, null);
+    });
+
+    it(`Whole Sign は変更なし: ${label}`, () => {
+      const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.WHOLE_SIGN);
+      assert.strictEqual(eff, HOUSE_SYSTEMS.WHOLE_SIGN);
+      assert.strictEqual(fallback, null);
+    });
+  }
+
+  for (const { lat, label } of NEAR_POLAR_CASES) {
+    it(`臨界値直下でフォールバックしない: ${label}`, () => {
+      const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.PLACIDUS);
+      assert.strictEqual(eff, HOUSE_SYSTEMS.PLACIDUS);
+      assert.strictEqual(fallback, null);
+    });
+  }
+});
+
+describe('calculateHouses — 極地で Equal にフォールバックしカスプが [0,360) に収まる', () => {
+  for (const { lat, lon, label } of POLAR_CASES) {
+    it(`Placidus 指定 → Equal フォールバック: ${label}`, () => {
+      const r = calculateHouses(J2000_JD, lat, lon, HOUSE_SYSTEMS.PLACIDUS);
+      assert.strictEqual(r.fallback, 'polar_latitude');
+      for (let i = 0; i < 12; i++) assertInRange(r.cusps[i], `H${i + 1}`);
+    });
+  }
+});
+
+// =========================================================================
+// solveNewton — maxStep クランプ
+// =========================================================================
+describe('solveNewton — maxStep クランプ', () => {
+  it('maxStep=60 で sin(x)=0 の正しい根に収束する（x0=350°→360°付近）', () => {
+    const root = solveNewton(x => Math.sin(x * Math.PI / 180), 350, { maxStep: 60 });
+    const normalized = ((root % 360) + 360) % 360;
+    assert.ok(normalized < 1 || normalized > 359, `root=${root}° (normalized=${normalized}°)`);
+  });
+
+  it('maxStep なしでも通常の方程式は収束する', () => {
+    const root = solveNewton(x => x * x - 4, 3);
+    assert.ok(close(root, 2, 1e-9), `root=${root}`);
   });
 });
