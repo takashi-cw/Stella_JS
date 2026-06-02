@@ -8,8 +8,8 @@
  *   - Koch          誕生地法（閉じた式）
  *   - Equal         ASC 基準 30° 等分
  *   - Whole Sign    星座全体ハウス
- *   - Regiomontanus 赤道等分投影法
- *   - Campanus      主垂直圏 30° 等分（地心専用）
+ *   - Regiomontanus 赤道等分 → 地平線北/南点大円で黄道投影（ベクトル法）
+ *   - Campanus      主垂直圏 30° 等分 → 地平線北/南点大円で黄道投影（ベクトル法）
  *
  * 戻り値の構造:
  *   { cusps: number[12], angles: [ASC, MC, DESC, IC] }
@@ -18,6 +18,8 @@
  * ライセンス: MIT
  * アルゴリズム出典:
  *   - Jean Meeus "Astronomical Algorithms" 2nd ed. Ch.24
+ *   - Regiomontanus / Campanus: 地平線北/南点基準の大円投影（ベクトル外積法）
+ *     歴史的実装（Swiss Ephemeris 等）と一致する定義に基づく
  */
 
 'use strict';
@@ -256,18 +258,75 @@ export function housesWholeSigns(jd, lat, lon) {
 }
 
 // =========================================================================
+// ベクトル法ヘルパー（Regiomontanus・Campanus 共用）
+// =========================================================================
+
+/** 3次元外積 */
+function _cross3(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+/** 3次元ベクトルの正規化 */
+function _norm3(v) {
+  const mag = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+  if (mag < 1e-15) throw new Error('_norm3: ゼロベクトル');
+  return [v[0] / mag, v[1] / mag, v[2] / mag];
+}
+
+/**
+ * 地平線北点基準の大円投影でハウスカスプ黄経を返す（内部関数）
+ *
+ * 手順:
+ *   1. 地平線北点 N = (RA=RAMC, δ=φ−90°) を赤道直交座標に変換
+ *   2. ハウス円の極 hp = N × P_eq （正規化）
+ *   3. 黄道北極 ep = (0, −sin ε, cos ε) との外積で黄道上の交点方向を得る
+ *   4. 赤道→黄道回転 R_x(+ε) で λ を求める
+ *
+ * @param {number[]} P_eq  赤道直交座標単位ベクトル（除数となる分割点）
+ * @param {number}   ramcR RAMC（ラジアン）
+ * @param {number}   latR  地理緯度（ラジアン）
+ * @param {number}   epsR  黄道傾斜角（ラジアン）
+ * @returns {number} 黄道経度（度、[0, 360)）
+ */
+function _horizonCusp(P_eq, ramcR, latR, epsR) {
+  // 地平線北点: δ = lat − 90°
+  const deltaN = latR - Math.PI / 2;
+  const cosDN  = Math.cos(deltaN);   // = sin(lat)
+  const N = [cosDN * Math.cos(ramcR), cosDN * Math.sin(ramcR), Math.sin(deltaN)];
+
+  // ハウス円の極
+  const hp = _norm3(_cross3(N, P_eq));
+
+  // 黄道北極（赤道直交系）
+  const ep = [0, -Math.sin(epsR), Math.cos(epsR)];
+
+  // 黄道上の交点方向
+  const cd = _norm3(_cross3(ep, hp));
+
+  // 赤道 → 黄道回転 R_x(+ε)
+  const ce = Math.cos(epsR), se = Math.sin(epsR);
+  const xe = cd[0];
+  const ye = cd[1] * ce + cd[2] * se;
+
+  return normAngle(Math.atan2(ye, xe) * 180 / Math.PI);
+}
+
+// =========================================================================
 // Regiomontanus
 // =========================================================================
 
 /**
  * Regiomontanus ハウスシステムを計算する（純粋関数）
  *
- * 天の赤道を RAMC 起点に 30° 等分し、各分割点を
- * 地平線の北/南点を通る大円で黄道に投影する。
+ * 天の赤道を RAMC 起点に 30° 等分し、各赤道上の分割点を
+ * **地平線の北点・南点を通る大円**で黄道に投影する（ベクトル法）。
  *
- *   tan(λ_n) = sin(θ_n) / (cos(θ_n)·cos(ε) − sin(ε)·tan(φ))
- *   θ_n = RAMC + n × 30°
- *   n=1 → H11, n=2 → H12, n=4 → H2, n=5 → H3
+ *   P_n = (cos(RAMC + n·30°), sin(RAMC + n·30°), 0)  ← 赤道上の単位ベクトル
+ *   n=1 → H11,  n=2 → H12,  n=4 → H2,  n=5 → H3
  *   下半球 = 上半球 + 180°
  *
  * @param {number} jd  ユリウス日
@@ -277,17 +336,17 @@ export function housesWholeSigns(jd, lat, lon) {
  */
 export function housesRegiomontanus(jd, lat, lon) {
   const { mc, asc, ramc } = calculateMcAsc(jd, lat, lon);
-  const desc = normAngle(asc + 180);
-  const ic   = normAngle(mc  + 180);
-  const eps  = obliquity(jd);
-  const latR = lat * Math.PI / 180;
-  const epsR = eps * Math.PI / 180;
+  const desc  = normAngle(asc + 180);
+  const ic    = normAngle(mc  + 180);
+  const eps   = obliquity(jd);
+  const ramcR = ramc * Math.PI / 180;
+  const latR  = lat  * Math.PI / 180;
+  const epsR  = eps  * Math.PI / 180;
 
   function regio(n) {
-    const theta = ((ramc + n * 30) % 360) * Math.PI / 180;
-    const numer = Math.sin(theta);
-    const denom = Math.cos(theta) * Math.cos(epsR) - Math.sin(epsR) * Math.tan(latR);
-    return normAngle(Math.atan2(numer, denom) * 180 / Math.PI);
+    const theta = ramcR + n * Math.PI / 6;   // RAMC + n*30° (ラジアン)
+    const P = [Math.cos(theta), Math.sin(theta), 0.0];
+    return _horizonCusp(P, ramcR, latR, epsR);
   }
 
   const cusps = new Array(12).fill(0);
@@ -295,10 +354,10 @@ export function housesRegiomontanus(jd, lat, lon) {
   cusps[3]  = ic;
   cusps[6]  = desc;
   cusps[9]  = mc;
-  cusps[10] = regio(1);                      // H11 θ = RAMC + 30°
-  cusps[11] = regio(2);                      // H12 θ = RAMC + 60°
-  cusps[1]  = regio(4);                      // H2  θ = RAMC + 120°
-  cusps[2]  = regio(5);                      // H3  θ = RAMC + 150°
+  cusps[10] = regio(1);                      // H11
+  cusps[11] = regio(2);                      // H12
+  cusps[1]  = regio(4);                      // H2
+  cusps[2]  = regio(5);                      // H3
   cusps[4]  = normAngle(cusps[10] + 180);    // H5
   cusps[5]  = normAngle(cusps[11] + 180);    // H6
   cusps[7]  = normAngle(cusps[1]  + 180);    // H8
@@ -314,9 +373,14 @@ export function housesRegiomontanus(jd, lat, lon) {
 /**
  * Campanus ハウスシステムを計算する（純粋関数）
  *
- * 主垂直圏（天頂を通る東西大円）を 30° 等分し、
- * 各分割点を赤道座標経由で黄道に投影する。
+ * 主垂直圏（東点 → 天頂 → 西点 → 天底）を 30° 等分し、
+ * 各分割点を**地平線の北点・南点を通る大円**で黄道に投影する（ベクトル法）。
  * 地球中心専用。
+ *
+ *   pv_i = (12 − i) × 30°  （東点 = 0° を基準として反時計回り）
+ *   P_i  = cos(pv_i)·ê_E + sin(pv_i)·ê_up  ← 主垂直圏上の単位ベクトル
+ *   i=1 (H2): pv=330°,  i=2 (H3): pv=300°,  …,  i=11 (H12): pv=30°
+ *   下半球 = 上半球 + 180°（_horizonCusp の外積向きで自動的に正しく出る）
  *
  * @param {number} jd  ユリウス日
  * @param {number} lat 地理緯度（度）
@@ -325,10 +389,18 @@ export function housesRegiomontanus(jd, lat, lon) {
  */
 export function housesCampanus(jd, lat, lon) {
   const { mc, asc, ramc } = calculateMcAsc(jd, lat, lon);
-  const desc = normAngle(asc + 180);
-  const ic   = normAngle(mc  + 180);
-  const eps  = obliquity(jd);
-  const latR = lat * Math.PI / 180;
+  const desc  = normAngle(asc + 180);
+  const ic    = normAngle(mc  + 180);
+  const eps   = obliquity(jd);
+  const ramcR = ramc * Math.PI / 180;
+  const latR  = lat  * Math.PI / 180;
+  const epsR  = eps  * Math.PI / 180;
+
+  // ローカルフレームの単位ベクトル（赤道直交系）
+  const sinLat = Math.sin(latR), cosLat = Math.cos(latR);
+  const sinLST = Math.sin(ramcR), cosLST = Math.cos(ramcR);
+  const eE  = [-sinLST,         cosLST,         0.0   ];  // 東点方向
+  const eUp = [ cosLat * cosLST, cosLat * sinLST, sinLat];  // 天頂方向
 
   const cusps = new Array(12).fill(0);
   cusps[0] = asc;
@@ -338,24 +410,14 @@ export function housesCampanus(jd, lat, lon) {
 
   for (let i = 1; i < 12; i++) {
     if (i % 3 === 0) continue;  // H4, H7, H10 はカーディナル（算出済み）
-    const pvRad = i * 30 * Math.PI / 180;
-    const decR  = Math.atan(Math.cos(pvRad) * Math.tan(latR));
-    const cosD  = Math.cos(decR);
-    let hR;
-    if (Math.abs(cosD) > 1e-4) {
-      let sinH = Math.sin(pvRad) * Math.cos(latR) / cosD;
-      sinH = Math.max(-1, Math.min(1, sinH));
-      hR   = Math.asin(sinH);
-      // pvAngle が 90° < pv < 270° の象限では時角の符号を反転
-      if (pvRad > Math.PI / 2 && pvRad < 3 * Math.PI / 2) {
-        hR = hR > 0 ? Math.PI - hR : -Math.PI - hR;
-      }
-    } else {
-      hR = 0;
-    }
-    const raForCusp    = normAngle(ramc - hR * 180 / Math.PI);
-    const { lon: ecl } = equatorialToEcliptic(raForCusp, decR * 180 / Math.PI, eps);
-    cusps[i] = ecl;
+    const pvR   = (12 - i) * Math.PI / 6;   // (12−i)×30° (ラジアン)
+    const cosPV = Math.cos(pvR), sinPV = Math.sin(pvR);
+    const P = [
+      cosPV * eE[0] + sinPV * eUp[0],
+      cosPV * eE[1] + sinPV * eUp[1],
+      cosPV * eE[2] + sinPV * eUp[2],
+    ];
+    cusps[i] = _horizonCusp(P, ramcR, latR, epsR);
   }
 
   return { cusps, angles: [asc, mc, desc, ic] };
