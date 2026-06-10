@@ -1,0 +1,15 @@
+# swe-check 除外リスト — Stella-JS GitHub デプロイ版
+#
+# Stella-JS は Swiss Ephemeris 非依存プロジェクト（JPL BSP/SPK + 独自計算のみ）。
+# Swiss Ephemeris への言及はすべて「不使用・独立実装」の説明であり AGPL リスクなし。
+#
+# ※ デプロイ先では public/src/ が docs/src/ に変わるため、ソース側と別ファイルで管理する。
+
+# テストの基準値コメントに "flatlib props.py 準拠" の言及がある（計算検証の出典明示）
+test/chart/aspects.test.js
+
+# 「歴史的実装（Swiss Ephemeris 等）と一致する定義」の説明コメント（独立実装の宣言）
+docs/src/astro/houses.js
+
+# 「SE_SIDM_FAGAN_BRADLEY と同値だが、独立した公開天文値」の独立宣言コメント
+docs/src/astro/precession.js

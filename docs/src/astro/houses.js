@@ -434,8 +434,11 @@ export function housesCampanus(jd, lat, lon) {
 /**
  * フォールバック後の実効ハウスシステムと理由を返す（純粋関数）
  *
- * |lat| > 90° − obliquity(jd) の緯度では一部の黄経で DSHA が未定義となり、
- * Placidus / Koch は天文学的に無意味な値を返す。Equal へ切り替える。
+ * |lat| > 90° − obliquity(jd) の緯度では、Semi-arc 系（Placidus / Koch）は
+ * DSHA が未定義となり、投影系（Regiomontanus / Campanus）はベクトルが縮退する。
+ * いずれも天文学的に無意味な値を返す可能性があるため、Equal へ切り替える。
+ *
+ * Equal / Whole Sign は極地でも定義が崩れないため除外する。
  *
  * @param {number} jd    ユリウス日
  * @param {number} lat   地理緯度（度）
@@ -444,11 +447,11 @@ export function housesCampanus(jd, lat, lon) {
  *   fallback は変更なし=null、極地='polar_latitude'
  */
 export function effectiveHouseSystem(jd, lat, hsys) {
-  const _polarSensitive = new Set([
-    HOUSE_SYSTEMS.PLACIDUS,
-    HOUSE_SYSTEMS.KOCH,
+  const _polarSafe = new Set([
+    HOUSE_SYSTEMS.EQUAL,
+    HOUSE_SYSTEMS.WHOLE_SIGN,
   ]);
-  if (!_polarSensitive.has(hsys)) return { hsys, fallback: null };
+  if (_polarSafe.has(hsys)) return { hsys, fallback: null };
 
   const eps = obliquity(jd);
   if (Math.abs(lat) > 90 - eps) {
@@ -464,8 +467,9 @@ export function effectiveHouseSystem(jd, lat, hsys) {
 /**
  * 指定されたハウスシステムでカスプを計算する（純粋関数）
  *
- * 極地緯度（|lat| > 90° − obliquity）では Placidus/Koch を Equal へ
+ * 極地緯度（|lat| > 90° − obliquity）では Semi-arc 系・投影系を Equal へ
  * 自動フォールバックし、戻り値の `fallback` フィールドに理由を返す。
+ * Equal / Whole Sign は極地でも安全なためフォールバック対象外。
  *
  * @param {number} jd         ユリウス日
  * @param {number} lat        地理緯度（度）

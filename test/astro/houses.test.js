@@ -291,6 +291,18 @@ describe('effectiveHouseSystem — 極地フォールバック検出', () => {
       assert.strictEqual(fallback, 'polar_latitude');
     });
 
+    it(`Regiomontanus → Equal (polar_latitude): ${label}`, () => {
+      const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.REGIOMONTANUS);
+      assert.strictEqual(eff, HOUSE_SYSTEMS.EQUAL, `hsys=${eff}`);
+      assert.strictEqual(fallback, 'polar_latitude');
+    });
+
+    it(`Campanus → Equal (polar_latitude): ${label}`, () => {
+      const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.CAMPANUS);
+      assert.strictEqual(eff, HOUSE_SYSTEMS.EQUAL, `hsys=${eff}`);
+      assert.strictEqual(fallback, 'polar_latitude');
+    });
+
     it(`Equal は変更なし: ${label}`, () => {
       const { hsys: eff, fallback } = effectiveHouseSystem(J2000_JD, lat, HOUSE_SYSTEMS.EQUAL);
       assert.strictEqual(eff, HOUSE_SYSTEMS.EQUAL);
@@ -317,6 +329,18 @@ describe('calculateHouses — 極地で Equal にフォールバックしカス�
   for (const { lat, lon, label } of POLAR_CASES) {
     it(`Placidus 指定 → Equal フォールバック: ${label}`, () => {
       const r = calculateHouses(J2000_JD, lat, lon, HOUSE_SYSTEMS.PLACIDUS);
+      assert.strictEqual(r.fallback, 'polar_latitude');
+      for (let i = 0; i < 12; i++) assertInRange(r.cusps[i], `H${i + 1}`);
+    });
+
+    it(`Regiomontanus 指定 → Equal フォールバック: ${label}`, () => {
+      const r = calculateHouses(J2000_JD, lat, lon, HOUSE_SYSTEMS.REGIOMONTANUS);
+      assert.strictEqual(r.fallback, 'polar_latitude');
+      for (let i = 0; i < 12; i++) assertInRange(r.cusps[i], `H${i + 1}`);
+    });
+
+    it(`Campanus 指定 → Equal フォールバック: ${label}`, () => {
+      const r = calculateHouses(J2000_JD, lat, lon, HOUSE_SYSTEMS.CAMPANUS);
       assert.strictEqual(r.fallback, 'polar_latitude');
       for (let i = 0; i < 12; i++) assertInRange(r.cusps[i], `H${i + 1}`);
     });
