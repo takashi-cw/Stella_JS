@@ -1,5 +1,7 @@
 # Licensing Notes — Stella-JS
 
+*最終更新: 2026-06-11*
+
 このドキュメントは、Stella-JS のライセンス適用根拠を説明するものです。  
 プロジェクト全体のライセンス方針は  
 `../LICENSING_NOTES.md`（Stella Series ルート）を参照してください。
@@ -29,8 +31,8 @@ Stella-JS は天体計算ライブラリです。MIT ライセンスを適用で
 ### ライセンス衛生の確認
 
 Stella-JS のソースコードは sweep-check によるスキャンを受けており、  
-Swiss Ephemeris 関連シグネチャの検出結果は  
-`../lab/sweep-check/Report/` に保存されています。
+Swiss Ephemeris 関連シグネチャは **検出されませんでした**。  
+スキャン結果レポートは `Stella-JS_report.md`（本ディレクトリ）に同梱されています。
 
 ---
 
@@ -51,6 +53,8 @@ Swiss Ephemeris 関連シグネチャの検出結果は
 ---
 
 # Licensing Notes — Stella-JS (English Translation)
+
+*Last updated: 2026-06-11*
 
 This document explains the license basis for Stella-JS.  
 For the project-wide licensing policy, see `../LICENSING_NOTES.md`
@@ -83,8 +87,8 @@ the following standard formulas and conventions:
 ### License Hygiene Verification
 
 The Stella-JS source code has been scanned by sweep-check.  
-The detection results for Swiss Ephemeris-related signatures are stored in  
-`../lab/sweep-check/Report/`.
+**No Swiss Ephemeris-related signatures were detected.**  
+The scan result report is included as `Stella-JS_report.md` in this directory.
 
 ---
 

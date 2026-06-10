@@ -17,7 +17,7 @@
     "chebyshev",
     "skyfield"
   ],
-  "author": "Takashi",
+  "author": "志賀高史 <shigatakashi.cw@gmail.com>",
   "license": "MIT",
   "type": "module"
 }

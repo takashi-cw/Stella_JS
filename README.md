@@ -98,6 +98,9 @@ stella-js/
 ├── .gitignore
 ├── DATA_ETHICS.md              データ倫理方針
 ├── LICENSE                     MIT
+├── LICENSE.ja.md               MIT ライセンス日本語訳
+├── LICENSING_NOTES.md          ライセンス解釈・適用方針
+├── Stella-JS_report.md         sweep-check スキャン結果（Swiss Ephemeris 依存検査）
 └── README.md                   本ファイル
 ```
 
@@ -115,6 +118,7 @@ stella-js/
 - **ソースコード**: MIT — 詳細は [LICENSE](LICENSE) を参照
 - **計算結果データ（.txt 出力）**: CC BY-NC-SA 4.0 — 出力ファイルにライセンス情報が付記されます
 - **JPL DE440s**: Public Domain（NASA）
+- **ライセンス衛生**: sweep-check スキャン済み・Swiss Ephemeris 依存なし（[Stella-JS_report.md](Stella-JS_report.md)）
 
 ---
 
@@ -122,4 +126,5 @@ stella-js/
 
 - [Skyfield](https://rhodesmill.org/skyfield/) — Python の天文計算ライブラリ（MIT）。本プロジェクトの設計参考
 - [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) — NASA の天体位置計算サービス
-- オンラインカウンセリングルーム「[しがたかしホッとライン](https://www.shigatkashi.com)」— 開発者
+- 開発者：志賀高史
+- 連絡先：shigatakashi.cw@gmail.com

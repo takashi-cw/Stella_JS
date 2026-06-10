@@ -58,8 +58,8 @@ export function buildTxtContent(rows, meta) {
   lines.push(`# 期間: ${meta.period}`);
   lines.push(`# ---`);
   lines.push(`# CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ja`);
-  lines.push(`# 開発者: オンラインカウンセリングルーム「しがたかしホッとライン」運営 志賀高史`);
-  lines.push(`# https://www.shigatkashi.com`);
+  lines.push(`# 開発者: 志賀高史`);
+  lines.push(`# 連絡先: shigatakashi.cw@gmail.com`);
   lines.push('');
   lines.push(['JST日時', '天体', '黄経(deg)', '角速度(deg/day)', '黄緯(deg)', '距離(AU)'].join('\t'));
   for (const r of rows) {
